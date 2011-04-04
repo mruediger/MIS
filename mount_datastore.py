@@ -28,7 +28,6 @@ def fromXML(xml):
                 if (t == 'int'):
                     node.stats[child.tag] = int(child.text)
                 if (t == 'long'):
-                    print child.tag
                     node.stats[child.tag] = long(child.text)
                 if (t == 'str'):
                     node.stats[child.tag] = str(child.text)

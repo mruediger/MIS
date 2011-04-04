@@ -9,13 +9,18 @@ class TestManifest(unittest.TestCase):
         root = Directory('/')
         child1 = Directory('test1')
         child2 = File('test2')
-
+        child3 = File('test3')
         child1.addChild(child2)
         root.addChild(child1)
+        root.addChild(child3)
         self.manifest = Manifest(root)
         self.root = root
         self.child1 = child1
         self.child2 = child2
+
+    def testGetSiblings(self):
+        for child in self.root.child.getSiblings():
+            print child.name
 
     def testGetPath(self):
         self.assertEquals(self.root, self.manifest.getPath('/'))

@@ -11,7 +11,7 @@ from datastore import Datastore
 from lxml import etree
 
 def usage():
-    print sys.argv[0] + " manifest_name root_directory"
+    print sys.argv[0] + " manifest_name root_directory datastore"
     sys.exit(1)
     
 def searchFiles(path,node,ds=None):
@@ -25,11 +25,11 @@ def searchFiles(path,node,ds=None):
         for child in os.listdir(path):
             childpath = path + '/' + child
             if (os.path.isdir(childpath)):
-                node.addChild(manifest.Directory(name = child))
-                searchFiles(path + '/' + child , node.children[child], ds)
+                childnode = manifest.Directory(name = child)
             if (os.path.isfile(childpath)):
-                node.addChild(manifest.File(name = child))
-                searchFiles(path + '/' + child, node.children[child], ds)
+                childnode = manifest.File(name = child)
+            node.addChild(childnode)
+            searchFiles(path + '/' + child, childnode, ds)
 
     elif os.path.isfile(path):
         #calculate hash of file
@@ -53,7 +53,7 @@ def toXML(node):
         xml.attrib['type'] = "file"
     
     for k in node.__slots__:
-        if (not (k == 'children' or k == 'stats')): 
+        if (not (k == 'child' or k == 'sibling')): 
             xmlchild = etree.SubElement(xml, k)
             xmlchild.attrib['type'] = type(getattr(node,k)).__name__
             xmlchild.text = str(getattr(node,k))
@@ -64,8 +64,8 @@ def toXML(node):
             xmlchild.attrib['type'] = type(getattr(node.stats,k)).__name__
             xmlchild.text = str(getattr(node.stats,k))
 
-    if (node.is_directory()):
-        for child in node.children.values():
+    if (node.is_directory() and node.child is not None):
+        for child in node.child.getSiblings():
             xml.append(toXML(child))
     return xml
 
