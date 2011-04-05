@@ -31,19 +31,17 @@ class Node(object):
     __slots__ = [ 
         "name",
         "sibling",
-        "st_atime",
-        "st_ctime",
-        "st_mtime",
-        "st_blksize",
-        "st_blocks",
-        "st_uid",
-        "st_gid",
-        "st_mode"
+        "stats"
     ]
+
+    def __getstate__ (self):
+        return [getattr(self, attr) for attr in self.__slots__]
+
 
     def __init__(self, name):
         self.name = name
         self.sibling = None
+        self.stats = None
 
     def getSiblings(self):
         sibling = self
@@ -58,6 +56,9 @@ class Directory(Node):
     def __init__(self, name=None):
         Node.__init__(self,name)
         self.child = None
+
+    def __getstate__ (self):
+        return [getattr(self, attr) for attr in self.__slots__]
 
     def is_directory(self):
         return True
@@ -80,6 +81,9 @@ class Directory(Node):
 class File(Node):
     
     __slots__ = Node.__slots__ + [ "hash" ]
+
+    def __getstate__ (self):
+        return [getattr(self, attr) for attr in self.__slots__]
 
     def __init__(self, name=None):
         Node.__init__(self,name)

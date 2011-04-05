@@ -4,6 +4,7 @@ import sys
 import os
 import hashlib
 import shutil
+import pickle
 
 import manifest
 from datastore import Datastore
@@ -45,30 +46,6 @@ def searchFiles(path,node,ds=None):
             if (not os.path.exists(ds.getPath(node.hash))):
                 shutil.copyfile(path,ds.getPath(node.hash))
 
-def toXML(node):
-    xml = etree.Element("file")
-    if (node.is_directory()):
-        xml.attrib['type'] = "dir"
-    else:
-        xml.attrib['type'] = "file"
-    
-    for k in node.__slots__:
-        if (not (k == 'child' or k == 'sibling')): 
-            xmlchild = etree.SubElement(xml, k)
-            xmlchild.attrib['type'] = type(getattr(node,k)).__name__
-            xmlchild.text = str(getattr(node,k))
-
-    for k in dir(node.stats):
-        if (k.startswith('st_')):
-            xmlchild = etree.SubElement(xml,k)
-            xmlchild.attrib['type'] = type(getattr(node.stats,k)).__name__
-            xmlchild.text = str(getattr(node.stats,k))
-
-    if (node.is_directory() and node.child is not None):
-        for child in node.child.getSiblings():
-            xml.append(toXML(child))
-    return xml
-
 if __name__ == '__main__':
 
         #PARSE ARGUMENTS
@@ -77,7 +54,7 @@ if __name__ == '__main__':
         root = sys.argv[2]
 
         if (len(sys.argv) >= 3):
-             datapath = sys.argv[3]
+            datapath = sys.argv[3]
         else:
             datapath = None
 
@@ -87,5 +64,11 @@ if __name__ == '__main__':
         tree = manifest.Directory('/')
         tree.stats = os.lstat(root)
         searchFiles(root, tree, Datastore(datapath))
-             
-        print etree.tostring(toXML(tree), pretty_print=True)
+         
+        
+        sys.setrecursionlimit(4000)
+        pickle.dump(tree, open(sys.argv[4],'w'))
+        #print etree.tostring(toXML(tree), pretty_print=True)
+
+        test = input("blablubb")
+

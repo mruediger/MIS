@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys
+import pickle
 
 from fs.expose import fuse
 from lxml import etree
@@ -44,6 +45,7 @@ def run():
 
     xml_file = open(sys.argv[1],'r')
     xml = etree.parse(xml_file)
+    pickle.load(open(sys.argv[1],'r'))
     manifest = Manifest(fromXML(xml.getroot()))
     datastore = Datastore(sys.argv[2]) 
     fs = UnamedFS(
