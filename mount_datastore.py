@@ -2,6 +2,8 @@
 
 import sys
 
+import pickle
+
 from fs.expose import fuse
 from lxml import etree
 
@@ -44,8 +46,9 @@ def run():
         sys.exit(1)
 
     xml_file = open(sys.argv[1],'r')
-    xml = etree.parse(xml_file)
-    manifest = Manifest(fromXML(xml.getroot()))
+    #xml = etree.parse(xml_file)
+    manifest = Manifest(pickle.load(xml_file))
+    xml_file.close()
     datastore = Datastore(sys.argv[2]) 
     fs = UnamedFS(
         sys.argv[3],    
@@ -56,11 +59,12 @@ def run():
 
 
 if __name__ == '__main__':
-    import trace
-    tracer = trace.Trace( 
-            ignoredirs = [],
-            trace = 0) 
-    tracer.run("run()")
-    r = tracer.results() 
-    r.write_results(show_missing=True, coverdir="ergebnis")
+    run()
+#    import trace
+#    tracer = trace.Trace( 
+#            ignoredirs = [],
+#            trace = 0) 
+#    tracer.run("run()")
+#    r = tracer.results() 
+#    r.write_results(show_missing=True, coverdir="ergebnis")
 

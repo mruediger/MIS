@@ -90,7 +90,11 @@ class UnamedFS(FS):
         return self.getinfoFromNode(node)
 
     def getinfoFromNode(self, node):
-        return node.stats
+        stats = {}
+        for k in dir(node.stats):
+            if (k.startswith("st_")):
+                stats[k] = getattr(node.stats, k)
+        return stats
 
     def exists(self, path):
         return self.manifest.getPath(path) is not None

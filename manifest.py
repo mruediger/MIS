@@ -33,7 +33,12 @@ class Node(object):
         "stats"
     ]
 
-        
+    def __getstate__(self):
+        return tuple([getattr(self, attr) for attr in self.__slots__])
+
+    def __setstate__(self, state):
+        for i in range(0, len(self.__slots__)):
+            setattr(self, self.__slots__[i], state[i])
 
     def __init__(self, name):
         self.name = name
@@ -46,6 +51,13 @@ class Directory(Node):
     def __init__(self, name=None):
         Node.__init__(self,name)
         self.children = dict()
+
+    def __getstate__(self):
+        return tuple([getattr(self, attr) for attr in self.__slots__])
+
+    def __setstate__(self, state):
+        for i in range(0, len(self.__slots__)):
+            setattr(self, self.__slots__[i], state[i])
 
     def is_directory(self):
         return True
@@ -60,6 +72,13 @@ class File(Node):
     def __init__(self, name=None):
         Node.__init__(self,name)
         self.hash = None
+
+    def __getstate__(self):
+        return tuple([getattr(self, attr) for attr in self.__slots__])
+
+    def __setstate__(self, state):
+        for i in range(0, len(self.__slots__)):
+            setattr(self, self.__slots__[i], state[i])
 
     def is_directory(self):
         return False

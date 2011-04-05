@@ -4,6 +4,7 @@ import sys
 import os
 import hashlib
 import shutil
+import pickle
 
 import manifest
 from datastore import Datastore
@@ -88,4 +89,5 @@ if __name__ == '__main__':
         tree.stats = os.lstat(root)
         searchFiles(root, tree, Datastore(datapath))
              
-        print etree.tostring(toXML(tree), pretty_print=True)
+        #print etree.tostring(toXML(tree), pretty_print=True)
+        pickle.dump(tree, open(sys.argv[4], 'w'))
