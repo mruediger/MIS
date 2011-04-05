@@ -36,14 +36,14 @@ class UnamedFS(FS):
         if (not direntry.is_directory):
             raise ResourceInvalidError(path,msg="Not a directory")
 
-        if (direntry.children == None):
-            return []
+        if (direntry.child == None):
+            return direntry []
 
         if (dirs_only and files_only):
-            return []
+            return direntry []
 
         
-        children = [ child.name for child in direntry.children.values() ]
+        children = [ child.name for child in direntry.child.getSiblings() ]
 
         if (wildcard is not None):
             match = fnmatch.fnmatch
