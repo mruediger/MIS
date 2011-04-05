@@ -4,11 +4,26 @@ testvalue = 1
 
 class Manifest(object):
 
+    __highest_inode = 0
+    __hardlinked_inodes = dict()
+
     def getNodeByInode(self, inode):
         pass #TODO
 
     def getNodeByPath(self, path):
         pass #TODO
+
+    def genInode(self, inode=None):
+        if (inode is not None)
+            if (not __hardlinked_inodes.has_key(inode)):
+                __highest_inode += 1
+                __hardlinked_inodes[inode] = __highest_inode
+            return __hardlinked_inodes[inode]
+        else:
+            __highest_inode += 1
+            return __highest_inode
+        
+
 
 class Node(object):
     
@@ -75,6 +90,9 @@ class Directory(Node):
                         stat.S_IROTH | stat.S_IXOTH |
                         stat.S_IFDIR)
 
+    def addChild(self, child, manifest, inode=None):
+        inode = manifest.getInode(inode)
+        self.children[inode] = child
 
     def get_nlink(self):
         """ return the number of children """
