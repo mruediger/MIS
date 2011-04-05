@@ -3,7 +3,7 @@
 import unittest
 import llfuse
 
-from mfs import fs
+import mfs.fs
 
 class TestMFS(unittest.TestCase):
     """A TestCase for mfv.fs"""
