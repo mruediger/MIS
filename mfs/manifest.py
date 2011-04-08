@@ -32,34 +32,8 @@ def setStats(node,stats):
 
 class Manifest(object):
 
-    __highest_inode = 0
-    __hardlinked_inodes = dict()
-
     def __init__(self, root):
         self.root = root
-        self.cache = list()
-
-    def getNode(self, inode):
-        if (inode == 1):
-            return self.root
-
-    def getNodeByInode(self, inode):
-        pass #TODO
-
-    def getNodeByPath(self, path):
-        pass #TODO
-
-    def genInode(self, inode=None):
-        if (inode is not None):
-            if (not __hardlinked_inodes.has_key(inode)):
-                __highest_inode += 1
-                __hardlinked_inodes[inode] = __highest_inode
-            return __hardlinked_inodes[inode]
-        else:
-            __highest_inode += 1
-            return __highest_inode
-        
-
 
 class Node(object):
     

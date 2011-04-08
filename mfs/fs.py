@@ -16,6 +16,24 @@ def toEntryAttribute(stat):
 class Operations(llfuse.Operations):
     """The Operations class overloads llfuse.Operations where nessessary."""
 
+    __highest_inode = 0
+    __hardlinked_inodes = dict()
+
+    #TODO nur einmal aufrufen lassen !
+    def setInode(self, node):
+        if hasattr(node, 'inode') and node.inode is None:
+            return
+        if node.is_hardlink:
+            if (not __hardlinked_inodes.has_key(node.hash)):
+                __highest_inode +=1
+                __hardlinked_inodes[node.hash] = __highest_inode
+            node.inode = __hardlinked_inodes[inode]
+        else:
+            __highest_inode += 1
+            node.inode = __highest_inode
+            
+
+
     def __init__(self, manifest):
         self.manifest = manifest
         self.cache = list()
@@ -65,8 +83,6 @@ class Operations(llfuse.Operations):
         child = self.cache[fh].children[off]
         off += 1
         return child.name , self.getattrFromNode(child), off
-        
-
     
     def __getattribute__(self,name):
         print name + " called"
