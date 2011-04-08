@@ -10,6 +10,7 @@ def searchFiles(path, name=""):
     if os.path.islink(path):
         node = SymbolicLink(name)
         setStats(node, os.lstat(path))
+        node.target = os.readlink(path)
         return node
 
     if os.path.isfile(path):
@@ -19,15 +20,17 @@ def searchFiles(path, name=""):
         
     if os.path.isdir(path):
         node = Directory(name)
+        setStats(node, os.lstat(path))
         for child in os.listdir(path):
             childpath = path + '/' + child
-            node.children.append(searchFiles(childpath, child))
+            node.children[child] = searchFiles(childpath, child)
         return node
 
         
     
 def setStats(node,stats):
     for key in [key for key in node.__slots__ if key.startswith("st_")]:
+        if key == "st_ino": continue
         setattr(node, key, getattr(stats, key))
 
 class Manifest(object):
@@ -48,13 +51,14 @@ class Node(object):
         'st_atime',
         'st_mtime',
         'st_ctime',
-        'st_mode' ]
+        'st_mode',
+        'st_rdev' ]
 
     def __init__(self, name):
         self.name = name
         
         # ACCESS
-        self.st_ino  = 1 # inode number
+        self.st_ino  = None 
         self.st_uid  = 0 # default to root
         self.st_gid  = 0 # default to root
 
@@ -74,13 +78,18 @@ class Node(object):
     def __str__(self):
         return self.name
 
-    st_rdev = property(lambda self: 0)    
+    st_nlink = property(lambda self: 1)
 
 class Socket(Node):
     pass
 
 class SymbolicLink(Node):
-    pass
+
+    __slots__ = Node.__slots__ + [ 'target' ]
+
+    def __init__(self, name):
+        Node.__init__(self,name)
+        
 
 class BlockDevice(Node):
     pass
@@ -97,14 +106,11 @@ class Directory(Node):
     
     def __init__(self, name):
         Node.__init__(self,name)
-        self.children = list()
+        self.children = dict()
         self.st_mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
                         stat.S_IRGRP | stat.S_IXGRP |
                         stat.S_IROTH | stat.S_IXOTH |
                         stat.S_IFDIR)
-
-    def addChild(self, child, manifest, inode=None):
-        self.children[inode] = child
 
     def get_nlink(self):
         """ return the number of children """
@@ -130,4 +136,4 @@ class File(Node):
                         stat.S_IROTH | 
                         stat.S_IFREG)
 
-    st_nlink = property(lambda self: testvalue)
+    st_nlink = property(lambda self: 1)

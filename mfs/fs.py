@@ -7,6 +7,8 @@ provides the basic llfuse linkage
 
 import llfuse
 import thread
+import errno
+import mfs
 
 def toEntryAttribute(stat):
     """converts the generic stat object of a manifest to a generic attribute"""
@@ -16,43 +18,36 @@ def toEntryAttribute(stat):
 class Operations(llfuse.Operations):
     """The Operations class overloads llfuse.Operations where nessessary."""
 
-    __highest_inode = 0
-    __hardlinked_inodes = dict()
-
-    #TODO nur einmal aufrufen lassen !
-    def setInode(self, node):
-        if hasattr(node, 'inode') and node.inode is None:
-            return
-        if node.is_hardlink:
-            if (not __hardlinked_inodes.has_key(node.hash)):
-                __highest_inode +=1
-                __hardlinked_inodes[node.hash] = __highest_inode
-            node.inode = __hardlinked_inodes[inode]
-        else:
-            __highest_inode += 1
-            node.inode = __highest_inode
-            
-
-
     def __init__(self, manifest):
         self.manifest = manifest
-        self.cache = list()
-        self.cache_lock = thread.allocate_lock()
+        
+        self.dircache = dict ()
+        self.dircache_lock = thread.allocate_lock()
+
+        self.highest_inode = 1
+        self.dircache[1] = manifest.root
+        self.manifest.root.st_ino = 1
+        
 
     def init(self):
         pass
 
     def getattr(self, inode):
-        if (inode == 1):
-            return self.getattrFromNode(self.manifest.root)
+        return self.getattrFromNode(self.dircache[inode])
 
     def getattrFromNode(self, node):
         entry = llfuse.EntryAttributes()
 
         #timeout for attributes in seconds
-        entry.attr_timeout = 1 
+        entry.attr_timeout  = 10
+        entry.entry_timeout = 10
+        entry.generation    = 0
 
-        entry.st_ino     = inode
+        if (node.st_ino is None):
+            self.highest_inode += 1
+            node.st_ino = self.highest_inode
+
+        entry.st_ino     = node.st_ino
         entry.st_mode    = node.st_mode
         entry.st_nlink   = node.st_nlink
         entry.st_uid     = node.st_uid
@@ -64,28 +59,48 @@ class Operations(llfuse.Operations):
         entry.st_atime   = node.st_atime
         entry.st_ctime   = node.st_ctime
         entry.st_mtime   = node.st_mtime
+
+        if isinstance (node, mfs.manifest.Directory):
+            with self.dircache_lock:
+                self.dircache[node.st_ino] = node
+
+        if isinstance (node, mfs.manifest.SymbolicLink):
+            with self.dircache_lock:
+                self.dircache[node.st_ino] = node
+
         return entry
 
-    
-    def opendir(self, inode):
-        node = None
-        retval = None
-        if (inode == 1):
-            node = self.manifest.root
+    def forget(self, inode, lookup):
+        try:
+            del self.dircache[inode]
+        except KeyError:
+            pass
 
-        with self.cache_lock:
-            self.cache.append(node)
-            retval = len(self.cache) - 1
-            
-        return retval
+    def opendir(self, inode):
+        return inode
+
+    def relasedir(self, fh):
+        del self.dircache[fh]
 
     def readdir(self, fh, off):
-        child = self.cache[fh].children[off]
-        off += 1
-        return child.name , self.getattrFromNode(child), off
+        for child in self.dircache[fh].children.values()[off:]:
+            off += 1
+            yield(child.name , self.getattrFromNode(child), off)
+
+    def lookup(self, parrent_ino, name):
+        if name == '.' or name == '..':
+            return self.getattr(parrent_ino) #FIXME
+        else:
+            try:
+                return self.getattrFromNode(self.dircache[parrent_ino].children[name])
+            except KeyError:
+                raise llfuse.FUSEError(errno.ENOENT)
+
+
+    def readlink(self, inode):
+        return self.dircache[inode].target
     
     def __getattribute__(self,name):
-        print name + " called"
-        #return llfuse.Operations.__getattribute__(self, name)
+        #print name + " called"
         return object.__getattribute__(self, name)
 
