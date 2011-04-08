@@ -16,9 +16,11 @@ def init_logging():
     log.setLevel(logging.INFO)    
     log.addHandler(handler)    
 
-def run(mountpoint):
+def run(mountpoint, path):
     init_logging()
-    operations = mfs.fs.Operations(None)
+    root = mfs.manifest.searchFiles(path)
+    manifest = mfs.manifest.Manifest(root)
+    operations = mfs.fs.Operations(manifest)
     llfuse.init(operations, mountpoint, [])
     llfuse.main(single=True)
     llfuse.close()
@@ -26,4 +28,4 @@ def run(mountpoint):
 
 
 if __name__ == '__main__':
-    run(sys.argv[1])
+    run(sys.argv[1], sys.argv[2])

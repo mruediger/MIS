@@ -6,7 +6,7 @@ provides the basic llfuse linkage
 """
 
 import llfuse
-
+import thread
 
 def toEntryAttribute(stat):
     """converts the generic stat object of a manifest to a generic attribute"""
@@ -18,35 +18,55 @@ class Operations(llfuse.Operations):
 
     def __init__(self, manifest):
         self.manifest = manifest
+        self.cache = list()
+        self.cache_lock = thread.allocate_lock()
 
     def init(self):
         pass
 
     def getattr(self, inode):
+        if (inode == 1):
+            return self.getattrFromNode(self.manifest.root)
+
+    def getattrFromNode(self, node):
         entry = llfuse.EntryAttributes()
 
         #timeout for attributes in seconds
         entry.attr_timeout = 1 
 
         entry.st_ino     = inode
-        entry.st_mode    = 16887
-        entry.st_nlink   = 2
-        entry.st_uid     = 1000
-        entry.st_gid     = 1000
-        entry.st_rdev    = 0
-        entry.st_size    = 4096
-        entry.st_blksize = 4096
-        entry.st_blocks  = 8
-        entry.st_atime   = 1301940008
-        entry.st_ctime   = 1301940008
-        entry.st_mtime   = 1301940008
+        entry.st_mode    = node.st_mode
+        entry.st_nlink   = node.st_nlink
+        entry.st_uid     = node.st_uid
+        entry.st_gid     = node.st_gid
+        entry.st_rdev    = node.st_rdev
+        entry.st_size    = node.st_size
+        entry.st_blksize = node.st_blksize
+        entry.st_blocks  = node.st_blocks
+        entry.st_atime   = node.st_atime
+        entry.st_ctime   = node.st_ctime
+        entry.st_mtime   = node.st_mtime
         return entry
 
+    
     def opendir(self, inode):
-        return 123
+        node = None
+        retval = None
+        if (inode == 1):
+            node = self.manifest.root
+
+        with self.cache_lock:
+            self.cache.append(node)
+            retval = len(self.cache) - 1
+            
+        return retval
 
     def readdir(self, fh, off):
-        return []
+        child = self.cache[fh].children[off]
+        off += 1
+        return child.name , self.getattrFromNode(child), off
+        
+
     
     def __getattribute__(self,name):
         print name + " called"
