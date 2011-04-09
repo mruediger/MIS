@@ -4,22 +4,13 @@ import unittest
 import mfs
 import os
 
+from lxml import etree
+
 class TestManifest(unittest.TestCase):
 
     def setUp(self):
         pass
 
-    def testDirectory(self):
-        directory = mfs.manifest.Directory("testdir")
-        self.assertEquals(directory.st_nlink, 2)
-        self.assertEquals(directory.st_mode, 16877)
-
-    def testFile(self):
-        file = mfs.manifest.File("testfile")
-        self.assertEquals(file.st_nlink, 1)
-        self.assertEquals(file.st_mode, 33188)
-        self.assertEquals(file.st_rdev, 0)
-  
     def testSetStats(self):
         node = mfs.manifest.Directory('/tmp')
         for key in [ key for key in node.__slots__ if key.startswith("st_")]:
@@ -28,11 +19,20 @@ class TestManifest(unittest.TestCase):
         mfs.manifest.setStats(node, os.stat('/tmp'))
 
         for key in [ key for key in node.__slots__ if key.startswith("st_")]:
-            self.assertNotEquals(getattr(node,key), None)
+            if (key == 'st_ino') : continue
+            if (getattr(node,key) == None):
+                print key
+                self.assertFalse(True)
 
-    def testSearchFiles(self):
-        root = mfs.manifest.searchFiles('.')
-        print root
+    def testToXML(self):
+        manifest = mfs.manifest.manifestFromPath('.')
+        #xml = manifest.toXML()
+        #string1 = etree.tostring(xml, pretty_print=True)
+        #string2 = etree.tostring(mfs.manifest.manifestFromXML(xml).toXML(), pretty_print=True)
+
+        s = raw_input("waiting")
+        
+        #keine ahnung wie ich das testen soll
 
 if __name__ == '__main__':
     unittest.main()

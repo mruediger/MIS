@@ -18,14 +18,18 @@ def toEntryAttribute(stat):
 class Operations(llfuse.Operations):
     """The Operations class overloads llfuse.Operations where nessessary."""
 
-    def __init__(self, manifest):
+    def __init__(self, manifest, datastore):
         self.manifest = manifest
+        self.datastore = datastore
         
-        self.dircache = dict ()
-        self.dircache_lock = thread.allocate_lock()
+        self.inodecache = dict ()
+        self.inodecache_lock = thread.allocate_lock()
+
+        self.filecache = dict ()
+        self.filecache_lock = thread.allocate_lock()
 
         self.highest_inode = 1
-        self.dircache[1] = manifest.root
+        self.inodecache[1] = manifest.root
         self.manifest.root.st_ino = 1
         
 
@@ -33,7 +37,7 @@ class Operations(llfuse.Operations):
         pass
 
     def getattr(self, inode):
-        return self.getattrFromNode(self.dircache[inode])
+        return self.getattrFromNode(self.inodecache[inode])
 
     def getattrFromNode(self, node):
         entry = llfuse.EntryAttributes()
@@ -43,7 +47,7 @@ class Operations(llfuse.Operations):
         entry.entry_timeout = 10
         entry.generation    = 0
 
-        if (node.st_ino is None):
+        if (not hasattr(node, "st_ino") or node.st_ino is None):
             self.highest_inode += 1
             node.st_ino = self.highest_inode
 
@@ -60,19 +64,14 @@ class Operations(llfuse.Operations):
         entry.st_ctime   = node.st_ctime
         entry.st_mtime   = node.st_mtime
 
-        if isinstance (node, mfs.manifest.Directory):
-            with self.dircache_lock:
-                self.dircache[node.st_ino] = node
-
-        if isinstance (node, mfs.manifest.SymbolicLink):
-            with self.dircache_lock:
-                self.dircache[node.st_ino] = node
+        with self.inodecache_lock:
+            self.inodecache[node.st_ino] = node
 
         return entry
 
     def forget(self, inode, lookup):
         try:
-            del self.dircache[inode]
+            del self.inodecache[inode]
         except KeyError:
             pass
 
@@ -80,10 +79,10 @@ class Operations(llfuse.Operations):
         return inode
 
     def relasedir(self, fh):
-        del self.dircache[fh]
+        del self.inodecache[fh]
 
     def readdir(self, fh, off):
-        for child in self.dircache[fh].children.values()[off:]:
+        for child in self.inodecache[fh].children.values()[off:]:
             off += 1
             yield(child.name , self.getattrFromNode(child), off)
 
@@ -92,13 +91,27 @@ class Operations(llfuse.Operations):
             return self.getattr(parrent_ino) #FIXME
         else:
             try:
-                return self.getattrFromNode(self.dircache[parrent_ino].children[name])
+                return self.getattrFromNode(self.inodecache[parrent_ino].children[name])
             except KeyError:
                 raise llfuse.FUSEError(errno.ENOENT)
 
+    def open(self, inode, flags):
+        with self.filecache_lock:
+            self.filecache[inode] = self.datastore.getData(
+                self.inodecache[inode]
+            )
+        return inode
+
+    def read(self, fh, offset, length):
+        self.filecache[fh].seek(offset)
+        return self.filecache[fh].read(length)
+
+    def release(self, fh):
+        self.filecache[fh].close()
+        del self.filecache[fh]
 
     def readlink(self, inode):
-        return self.dircache[inode].target
+        return self.inodecache[inode].target
     
     def __getattribute__(self,name):
         #print name + " called"

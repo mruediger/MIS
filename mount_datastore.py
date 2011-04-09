@@ -4,6 +4,7 @@ import llfuse
 import sys
 import logging
 
+from lxml import etree
 
 import mfs
 
@@ -16,11 +17,16 @@ def init_logging():
     log.setLevel(logging.INFO)    
     log.addHandler(handler)    
 
-def run(mountpoint, path):
+def run(mountpoint, manifest, datastore):
     init_logging()
-    root = mfs.manifest.searchFiles(path)
-    manifest = mfs.manifest.Manifest(root)
-    operations = mfs.fs.Operations(manifest)
+
+    mf = open(manifest,'r')
+    operations = mfs.fs.Operations(
+        mfs.manifest.manifestFromXML(mf), 
+        mfs.datastore.Datastore(datastore))
+
+    mf.close()
+
     llfuse.init(operations, mountpoint, [])
     llfuse.main(single=True)
     llfuse.close()
@@ -28,4 +34,17 @@ def run(mountpoint, path):
 
 
 if __name__ == '__main__':
-    run(sys.argv[1], sys.argv[2])
+    import argparse, os, sys
+    parser = argparse.ArgumentParser(
+        description="mounts a manifest"
+    )
+    parser.add_argument('MANIFEST', type=str, help="path to manifest file")
+    parser.add_argument('DATASTORE', type=str, help="datastore to read from")
+    parser.add_argument('MOUNTPOINT', type=str, help="the mountpoint")
+    args = parser.parse_args()
+
+    run(
+        mountpoint = args.MOUNTPOINT,
+        manifest = args.MANIFEST,
+        datastore = args.DATASTORE
+    )
