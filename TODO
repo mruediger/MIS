@@ -1,0 +1,13 @@
+Mergen:
+    - mit unionfs
+    - mit AUFS
+
+Filtern:
+    - scripte auf readonly + unionfs
+    - AUFS (another union fs)
+    - auch nach dateiinhalt
+
+Exportieren:
+    - xen
+    - vmware
+    - virtualbox
