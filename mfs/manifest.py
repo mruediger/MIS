@@ -29,6 +29,9 @@ def manifestFromXML(xml_file):
         if (element.tag == "hash" and action=="end"):
             parent[len(parent) - 1].hash = element.text
 
+        if (element.tag == "orig_inode" and action=="end"):
+            parent[len(parent) - 1].orig_inode = int(element.text)
+
         if (element.tag == "target" and action=="end"):
             parent[len(parent) - 1].target = element.text
             
@@ -46,32 +49,43 @@ def searchFiles(path, datastore, name):
     if (not os.path.exists(path)):
         return
 
-    if os.path.islink(path):
-        node = SymbolicLink(name)
-        setStats(node, os.lstat(path))
+    stats = os.lstat(path)
+
+    if stat.S_ISLNK(stats.st_mode):
+        node = SymbolicLink(name, stats)
         node.target = os.readlink(path)
         return node
 
-    if os.path.isfile(path):
-        node = File(name)
-        setStats(node, os.lstat(path))
+    if stat.S_ISREG(stats.st_mode):
+        node = File(name, stats)
+        node.orig_inode = stats.st_ino
         if (datastore is not None):
             datastore.saveData(node, path)
-
         return node
         
-    if os.path.isdir(path):
-        node = Directory(name)
-        setStats(node, os.lstat(path))
+    if stat.S_ISDIR(stats.st_mode):
+        node = Directory(name, stats)
         for child in os.listdir(path):
             childpath = path + '/' + child
             node.children[child] = searchFiles(childpath, datastore, child)
         return node
 
-def setStats(node,stats):
-    for key in [key for key in node.__slots__ if key.startswith("st_")]:
-        if key == "st_ino": continue
-        setattr(node, key, getattr(stats, key))
+    #if none of the above, test maually
+    if stat.S_ISSOCK(stats.st_mode):
+        node = Socket(name, stats)
+        return node
+
+    if stat.S_ISBLK(stats.st_mode):
+        node = Device(name, stats)
+        return node
+
+    if stat.S_ISCHR(stats.st_mode):
+        node = Device(name, stats)
+        return node
+
+    if stat.S_ISFIFO(stats.st_mode):
+        node = FIFO(name, stats)
+        return node
 
 class Manifest(object):
 
@@ -87,7 +101,7 @@ class Node(object):
     
     __slots__ = [
         'name',
-        'st_ino',
+        'inode',
         'st_uid',
         'st_gid',
         'st_blksize',
@@ -97,12 +111,16 @@ class Node(object):
         'st_mtime',
         'st_ctime',
         'st_mode',
-        'st_rdev' ]
+        'st_nlink', ]
 
-    def __init__(self, name):
+    def __init__(self, name, stats=None):
         if (name is None):
             raise ValueError
         self.name = name
+
+        if stats is not None:
+            for key in [key for key in self.__slots__ if key.startswith("st_")]:
+                setattr(self, key, getattr(stats, key))
         
     def __str__(self):
         return self.name
@@ -119,8 +137,8 @@ class Node(object):
             element.text = str(attr)
         return xml
 
-
-    st_nlink = property(lambda self: 1)
+    #only defined for special files
+    st_rdev = property(lambda self: 0)
 
 class Socket(Node):
     pass
@@ -129,9 +147,6 @@ class SymbolicLink(Node):
 
     __slots__ = Node.__slots__ + [ 'target' ]
 
-    def __init__(self, name):
-        Node.__init__(self,name)
-        
     def toXML(self):
         xml = super(SymbolicLink,self).toXML()
         if hasattr(self, "target"):
@@ -139,11 +154,11 @@ class SymbolicLink(Node):
            element.text = self.target
         return xml
 
-class BlockDevice(Node):
-    pass
+class Device(Node):
 
-class CharacterDevice(Node):
-    pass
+    #the rest is handled automaticly by setStat
+    __slots__ = Node.__slots__ + ['st_rdev']
+
 
 class FIFO(Node):
     pass
@@ -152,8 +167,8 @@ class Directory(Node):
 
     __slots__ = Node.__slots__ + [ 'children' ]
     
-    def __init__(self, name):
-        Node.__init__(self,name)
+    def __init__(self, name, stats=None):
+        Node.__init__(self,name, stats)
         self.children = dict()
           
     def toXML(self):
@@ -170,21 +185,16 @@ class Directory(Node):
                 retval += self.name + '/' + string
         return retval
 
-    st_nlink = property(lambda self: len(self.children) + 2)
-
 class File(Node):
 
-    __slots__ = Node.__slots__ + [ 'hash' ]
-
-    def __init__(self, name):
-        Node.__init__(self,name)
+    __slots__ = Node.__slots__ + [ 'hash', 'orig_inode' ]
 
     def toXML(self):
         xml = super(File,self).toXML()
+        if hasattr(self, "orig_inode"):
+            element = etree.SubElement(xml, "orig_inode", type="int")
+            element.text = str(self.orig_inode)
         if hasattr(self, "hash"):
-           element = etree.SubElement(xml, "hash", type="str")
-           element.text = self.hash
+            element = etree.SubElement(xml, "hash", type="str")
+            element.text = str(self.hash)
         return xml
-
-        
-    st_nlink = property(lambda self: 1)

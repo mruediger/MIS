@@ -30,8 +30,9 @@ class Operations(llfuse.Operations):
 
         self.highest_inode = 1
         self.inodecache[1] = manifest.root
-        self.manifest.root.st_ino = 1
+        self.manifest.root.inode = 1
         
+        self.hardlinks = dict()
 
     def init(self):
         pass
@@ -47,11 +48,17 @@ class Operations(llfuse.Operations):
         entry.entry_timeout = 10
         entry.generation    = 0
 
-        if (not hasattr(node, "st_ino") or node.st_ino is None):
-            self.highest_inode += 1
-            node.st_ino = self.highest_inode
+        if (not hasattr(node, "inode") or node.inode is None):
+            if (isinstance(node, mfs.manifest.File) and node.st_nlink > 1):
+                if(not self.hardlinks.has_key(node.orig_inode)):
+                    self.highest_inode += 1
+                    self.hardlinks[node.orig_inode] = self.highest_inode
+                node.inode = self.hardlinks[node.orig_inode]
+            else:
+                self.highest_inode += 1
+                node.inode = self.highest_inode
 
-        entry.st_ino     = node.st_ino
+        entry.st_ino     = node.inode
         entry.st_mode    = node.st_mode
         entry.st_nlink   = node.st_nlink
         entry.st_uid     = node.st_uid
@@ -65,7 +72,7 @@ class Operations(llfuse.Operations):
         entry.st_mtime   = node.st_mtime
 
         with self.inodecache_lock:
-            self.inodecache[node.st_ino] = node
+            self.inodecache[node.inode] = node
 
         return entry
 
