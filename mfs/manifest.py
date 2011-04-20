@@ -44,6 +44,22 @@ def manifestFromXML(xml_file):
             element.clear()
     
     return Manifest(parent.pop().children.values()[0])
+
+def unionmerge(orig, new):
+    for key in new.children.iterkeys():
+        if key.endswith('_HIDDEN~'):
+            del orig.children[key.rstrip('_HIDDEN~')]
+        else:
+            unionmerge(orig.children[key], new.children[key])
+
+
+def merge(orig, new):
+    #check for unionfs
+    if (new.root.children.has_key('.unionfs')):
+        unionmerge(orig.root, new.root.children['.unionfs'])
+
+    orig.root.merge(new.root)
+    return orig
     
 def searchFiles(path, datastore, name):
     if (not os.path.exists(path)):
@@ -133,7 +149,9 @@ class Node(object):
             return False
 
         for key in self.__slots__:
+            #inode is dynamic
             if (key == 'inode') : continue
+            #time may differ slightly
             if (key.endswith('time')) : continue
             if (getattr(self, key) != getattr(node, key)):
                 return False
@@ -190,6 +208,11 @@ class Directory(Node):
         for child in self.children.values():
             xml.append(child.toXML())
         return xml
+
+    def merge(self, new):
+        for key, child in new.children.iteritems():
+            if not self.children.has_key(key):
+                self.children[key] = child
 
     def __eq__(self, node):
         if (not super(Directory,self).__eq__(node)):

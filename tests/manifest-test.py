@@ -39,6 +39,36 @@ class TestManifest(unittest.TestCase):
         manifest_new.root.children['testfile_a'].name = "kartoffelbrei"
         self.assertNotEquals(manifest_orig, manifest_new)
 
+    def testMerge(self):
+        datastore = mfs.datastore.Datastore('datastore')
+        manifest_orig = mfs.manifest.manifestFromPath('testdir', datastore)
+        manifest_new = mfs.manifest.manifestFromPath('testdir', datastore)
+
+        #test rename
+        tmp = manifest_new.root.children.pop('testfile_a')
+        tmp.name = 'kartoffelbrei'
+        manifest_new.root.children['kartoffelbrei'] = tmp
+        self.assertNotEquals(manifest_orig, manifest_new)
+
+        manifest_merged = mfs.manifest.merge(manifest_orig, manifest_new)
+        self.assertTrue(manifest_merged.root.children.has_key('testfile_a'))
+        self.assertTrue(manifest_merged.root.children.has_key('kartoffelbrei'))
+        
+        #test remove with unionfs
+        manifest_new.root.children['.unionfs'] = mfs.manifest.Directory('.unionfs')
+        manifest_new.root.children['.unionfs'].children['testfile_a_HIDDEN~'] = mfs.manifest.File('testfile_a_HIDDEN~')
+        manifest_merged = mfs.manifest.merge(manifest_orig, manifest_new)
+        self.assertFalse(manifest_merged.root.children.has_key('testfile_a'))
+        self.assertTrue(manifest_merged.root.children.has_key('kartoffelbrei'))
+        
+        #test remove with unionfs recursive
+        manifest_new.root.children['.unionfs'] = mfs.manifest.Directory('.unionfs')
+        manifest_new.root.children['.unionfs'].children['testdir'] = mfs.manifest.Directory('testdir')
+        manifest_new.root.children['.unionfs'].children['testdir'].children['another_file_HIDDEN~'] = mfs.manifest.File('another_file_HIDDEN~')
+        manifest_merged = mfs.manifest.merge(manifest_orig, manifest_new)
+        self.assertTrue(manifest_merged.root.children.has_key('testdir'))
+        self.assertTrue(manifest_new.root.children['testdir'].children.has_key('another_file'))
+        self.assertFalse(manifest_merged.root.children['testdir'].children.has_key('another_file'))
 
 if __name__ == '__main__':
     unittest.main()

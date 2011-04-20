@@ -1,4 +1,5 @@
 Mergen:
+    - rename, remove, add
     - mit unionfs
     - mit AUFS
 
