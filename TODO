@@ -4,8 +4,9 @@ Mergen:
 
 Filtern:
     - scripte auf readonly + unionfs
-    - AUFS (another union fs)
-    - auch nach dateiinhalt
+
+MFSEdit:
+    - mfsls, mfscat, ...
 
 Exportieren:
     - xen
