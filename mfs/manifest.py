@@ -96,6 +96,9 @@ class Manifest(object):
         tree = etree.ElementTree(self.root.toXML())
         return tree
 
+    def __eq__(self, manifest):
+        return self.root == manifest.root
+
 
 class Node(object):
     
@@ -124,6 +127,17 @@ class Node(object):
         
     def __str__(self):
         return self.name
+
+    def __eq__(self, node):
+        if self.__slots__ != node.__slots__:
+            return False
+
+        for key in self.__slots__:
+            if (key == 'inode') : continue
+            if (key.endswith('time')) : continue
+            if (getattr(self, key) != getattr(node, key)):
+                return False
+        return True
 
     def toXML(self):
         xml = etree.Element("file")
@@ -176,6 +190,12 @@ class Directory(Node):
         for child in self.children.values():
             xml.append(child.toXML())
         return xml
+
+    def __eq__(self, node):
+        if (not super(Directory,self).__eq__(node)):
+            return False
+        else:
+            return all(self.children[key] == node.children[key] for key in self.children.iterkeys())
 
     def __str__(self):
         retval = self.name
