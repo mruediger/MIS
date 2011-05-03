@@ -1,7 +1,12 @@
 Mergen:
     - rename, remove, add
-    - mit unionfs
+    - mit unionfs MODIFY noch testen
     - mit AUFS
+    - mergen in eigenes programm verschieben
+    - mergen mit eigenen unittests ausstatten
+
+Datenstruktur:
+    dict() -> list()
 
 Filtern:
     - scripte auf readonly + unionfs

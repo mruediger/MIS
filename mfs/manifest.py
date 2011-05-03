@@ -3,7 +3,7 @@ import os
 
 from lxml import etree
 from collections import deque
-
+from copy import copy
 
 def manifestFromPath(path, datastore=None):
     root = searchFiles(path, datastore, name='/')
@@ -52,14 +52,26 @@ def unionmerge(orig, new):
         else:
             unionmerge(orig.children[key], new.children[key])
 
+def aufsmerge(orig, new):
+    for key in new.children.iterkeys():
+        if key.startswith('.wh.'):
+            del orig.children[key.lstrip('.wh.')]
+        else:
+            aufsmerge(orig.children[key], new.children[key])
+
+def _merge(orig, new):
+    target = eval(type(orig).__name__)(orig.name)
+        
+    return target
 
 def merge(orig, new):
-    #check for unionfs
-    if (new.root.children.has_key('.unionfs')):
-        unionmerge(orig.root, new.root.children['.unionfs'])
+    retval = _merge(orig.root, new.root)
 
-    orig.root.merge(new.root)
-    return orig
+    #check for unionfs
+    #if (new.root.children.has_key('.unionfs')):
+    #    unionmerge(orig.root, new.root.children['.unionfs'])
+
+    return Manifest(retval)
     
 def searchFiles(path, datastore, name):
     if (not os.path.exists(path)):
@@ -208,11 +220,6 @@ class Directory(Node):
         for child in self.children.values():
             xml.append(child.toXML())
         return xml
-
-    def merge(self, new):
-        for key, child in new.children.iteritems():
-            if not self.children.has_key(key):
-                self.children[key] = child
 
     def __eq__(self, node):
         if (not super(Directory,self).__eq__(node)):

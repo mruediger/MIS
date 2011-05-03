@@ -44,6 +44,10 @@ class TestManifest(unittest.TestCase):
         manifest_orig = mfs.manifest.manifestFromPath('testdir', datastore)
         manifest_new = mfs.manifest.manifestFromPath('testdir', datastore)
 
+        #basic
+        manifest_merged = mfs.manifest.merge(manifest_orig, manifest_orig)
+        self.assertEquals(manifest_orig, manifest_merged)
+
         #test rename
         tmp = manifest_new.root.children.pop('testfile_a')
         tmp.name = 'kartoffelbrei'
@@ -54,6 +58,10 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(manifest_merged.root.children.has_key('testfile_a'))
         self.assertTrue(manifest_merged.root.children.has_key('kartoffelbrei'))
         
+        #test modify file
+        manifest_new.root.children['kartoffelbrei'].hash = 123
+        
+
         #test remove with unionfs
         manifest_new.root.children['.unionfs'] = mfs.manifest.Directory('.unionfs')
         manifest_new.root.children['.unionfs'].children['testfile_a_HIDDEN~'] = mfs.manifest.File('testfile_a_HIDDEN~')
@@ -69,6 +77,10 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(manifest_merged.root.children.has_key('testdir'))
         self.assertTrue(manifest_new.root.children['testdir'].children.has_key('another_file'))
         self.assertFalse(manifest_merged.root.children['testdir'].children.has_key('another_file'))
+
+        #test remove with aufs
+        #test remove with aufs recursive
+
 
 if __name__ == '__main__':
     unittest.main()
