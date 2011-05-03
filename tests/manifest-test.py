@@ -47,6 +47,15 @@ class TestManifest(unittest.TestCase):
         #basic
         manifest_merged = mfs.manifest.merge(manifest_orig, manifest_orig)
         self.assertEquals(manifest_orig, manifest_merged)
+        self.assertTrue(manifest_merged.root.children.has_key('testdir'))
+        self.assertTrue(manifest_merged.root.children['testdir'].children.has_key('another_file'))
+
+        #reference test
+        self.assertEquals(manifest_orig, manifest_merged)
+        manifest_merged.root.children['testdir'].name = "falsename"
+        self.assertNotEquals(manifest_orig, manifest_merged)
+        manifest_merged.root.children['testdir'].name = "testdir"
+        self.assertEquals(manifest_orig, manifest_merged)
 
         #test rename
         tmp = manifest_new.root.children.pop('testfile_a')
@@ -73,6 +82,7 @@ class TestManifest(unittest.TestCase):
         manifest_new.root.children['.unionfs'] = mfs.manifest.Directory('.unionfs')
         manifest_new.root.children['.unionfs'].children['testdir'] = mfs.manifest.Directory('testdir')
         manifest_new.root.children['.unionfs'].children['testdir'].children['another_file_HIDDEN~'] = mfs.manifest.File('another_file_HIDDEN~')
+        self.assertTrue(manifest_new.root.children['testdir'].children.has_key('another_file'))
         manifest_merged = mfs.manifest.merge(manifest_orig, manifest_new)
         self.assertTrue(manifest_merged.root.children.has_key('testdir'))
         self.assertTrue(manifest_new.root.children['testdir'].children.has_key('another_file'))

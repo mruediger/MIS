@@ -3,7 +3,6 @@ import os
 
 from lxml import etree
 from collections import deque
-from copy import copy
 
 def manifestFromPath(path, datastore=None):
     root = searchFiles(path, datastore, name='/')
@@ -45,12 +44,12 @@ def manifestFromXML(xml_file):
     
     return Manifest(parent.pop().children.values()[0])
 
-def unionmerge(orig, new):
-    for key in new.children.iterkeys():
+def unionmerge(target, unionfsdir):
+    for key in unionfsdir.children.iterkeys():
         if key.endswith('_HIDDEN~'):
-            del orig.children[key.rstrip('_HIDDEN~')]
+            del target.children[key.rstrip('_HIDDEN~')]
         else:
-            unionmerge(orig.children[key], new.children[key])
+            unionmerge(target.children[key], unionfsdir.children[key])
 
 def aufsmerge(orig, new):
     for key in new.children.iterkeys():
@@ -59,19 +58,42 @@ def aufsmerge(orig, new):
         else:
             aufsmerge(orig.children[key], new.children[key])
 
-def _merge(orig, new):
-    target = eval(type(orig).__name__)(orig.name)
-        
-    return target
+def _merge(orig, new, target):
+    #FIXME hack entfernen
+    if orig is None:
+        orig = new
+    if new is None:
+        new = orig
+    assert isinstance(orig, Directory)
+    assert isinstance(new, Directory)
+    assert isinstance(target, Directory)
+
+    #copy original nodes
+    for name, child in orig.children.iteritems():
+        target.children[name] = child.copy()
+
+    #overwrite with changed nodes
+    for name, child in new.children.iteritems():
+        target.children[name] = child.copy()
+
+    #recursion through all nodes
+    for name in target.children.iterkeys():
+        if isinstance(target.children[name], Directory):
+            try:
+                _merge(orig.children.get(name, None), new.children.get(name, None), target.children.get(name, None))
+            except KeyError:
+                continue
 
 def merge(orig, new):
-    retval = _merge(orig.root, new.root)
+    target = orig.root.copy()
+    _merge(orig.root, new.root, target)
 
     #check for unionfs
-    #if (new.root.children.has_key('.unionfs')):
-    #    unionmerge(orig.root, new.root.children['.unionfs'])
+    if (target.children.has_key('.unionfs')):
+        unionmerge(target, target.children['.unionfs']) 
+        del target.children['.unionfs']
 
-    return Manifest(retval)
+    return Manifest(target)
     
 def searchFiles(path, datastore, name):
     if (not os.path.exists(path)):
@@ -169,6 +191,13 @@ class Node(object):
                 return False
         return True
 
+    def copy(self):
+        retval = self.__new__(type(self), self.name)
+        for key in self.__slots__:
+            if hasattr(self, key):
+                setattr(retval, key,getattr(self,key))
+        return retval
+
     def toXML(self):
         xml = etree.Element("file")
         xml.attrib["name"] = self.name
@@ -220,6 +249,11 @@ class Directory(Node):
         for child in self.children.values():
             xml.append(child.toXML())
         return xml
+
+    def copy(self):
+        retval = super(Directory,self).copy()
+        retval.children = dict()
+        return retval
 
     def __eq__(self, node):
         if (not super(Directory,self).__eq__(node)):
