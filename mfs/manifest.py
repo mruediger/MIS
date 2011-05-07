@@ -44,57 +44,6 @@ def manifestFromXML(xml_file):
     
     return Manifest(parent.pop().children.values()[0])
 
-def unionmerge(target, unionfsdir):
-    for key in unionfsdir.children.iterkeys():
-        if key.endswith('_HIDDEN~'):
-            del target.children[key.rstrip('_HIDDEN~')]
-        else:
-            unionmerge(target.children[key], unionfsdir.children[key])
-
-def aufsmerge(orig, new):
-    for key in new.children.iterkeys():
-        if key.startswith('.wh.'):
-            del orig.children[key.lstrip('.wh.')]
-        else:
-            aufsmerge(orig.children[key], new.children[key])
-
-def _merge(orig, new, target):
-    #FIXME hack entfernen
-    if orig is None:
-        orig = new
-    if new is None:
-        new = orig
-    assert isinstance(orig, Directory)
-    assert isinstance(new, Directory)
-    assert isinstance(target, Directory)
-
-    #copy original nodes
-    for name, child in orig.children.iteritems():
-        target.children[name] = child.copy()
-
-    #overwrite with changed nodes
-    for name, child in new.children.iteritems():
-        target.children[name] = child.copy()
-
-    #recursion through all nodes
-    for name in target.children.iterkeys():
-        if isinstance(target.children[name], Directory):
-            try:
-                _merge(orig.children.get(name, None), new.children.get(name, None), target.children.get(name, None))
-            except KeyError:
-                continue
-
-def merge(orig, new):
-    target = orig.root.copy()
-    _merge(orig.root, new.root, target)
-
-    #check for unionfs
-    if (target.children.has_key('.unionfs')):
-        unionmerge(target, target.children['.unionfs']) 
-        del target.children['.unionfs']
-
-    return Manifest(target)
-    
 def searchFiles(path, datastore, name):
     if (not os.path.exists(path)):
         return
@@ -187,8 +136,12 @@ class Node(object):
             if (key == 'inode') : continue
             #time may differ slightly
             if (key.endswith('time')) : continue
-            if (getattr(self, key) != getattr(node, key)):
-                return False
+            if (hasattr(self, key) and hasattr(node, key)):
+                if (getattr(self, key) != getattr(node, key)):
+                    return False
+            else:
+                if (hasattr(self,key) != hasattr(node,key)):
+                    return False
         return True
 
     def copy(self):

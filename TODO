@@ -6,7 +6,14 @@ Mergen:
     - mergen mit eigenen unittests ausstatten
 
 Datenstruktur:
-    dict() -> list()
+    dateinamen nur aus dict
+
+HASH:
+    hash erzeugung parallelisieren
+
+Dateisystem:
+    tuning
+    locking anschauen
 
 Filtern:
     - scripte auf readonly + unionfs
