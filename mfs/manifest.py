@@ -108,9 +108,9 @@ class Node(object):
         'inode',
         'st_uid',
         'st_gid',
-        'st_blksize',   #TODO redundant
-        'st_size',      #TODO redundant
-        'st_blocks',    #TODO redundant
+        'st_blksize',   #TODO sparse files checken
+        'st_size',      #TODO sparse files checken 
+        'st_blocks',    #TODO sparse files checken
         'st_atime',
         'st_mtime',
         'st_ctime',
