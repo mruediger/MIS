@@ -25,3 +25,8 @@ Exportieren:
     - xen
     - vmware
     - virtualbox
+
+
+Nice to have:
+    ACL
+    ctime

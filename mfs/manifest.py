@@ -98,6 +98,9 @@ class Manifest(object):
     def __eq__(self, manifest):
         return self.root == manifest.root
 
+    def getdata(self, datastore):
+        for child in self.root.getdata('', datastore):
+            yield(child)
 
 class Node(object):
     
@@ -163,6 +166,9 @@ class Node(object):
             element.text = str(attr)
         return xml
 
+    def getdata(self, name, datastore):
+        yield "TODO: " + name
+
     #only defined for special files
     st_rdev = property(lambda self: 0)
 
@@ -186,6 +192,9 @@ class Device(Node):
     __slots__ = Node.__slots__ + ['st_rdev']
 
 
+    def getdata(self, name, datastore):
+        yield "mknod " + name
+
 class FIFO(Node):
     pass
 
@@ -207,6 +216,13 @@ class Directory(Node):
         retval = super(Directory,self).copy()
         retval.children = dict()
         return retval
+
+    def getdata(self, name, datastore):
+        name += '/'
+        yield "mkdir " + name
+        for key, child in self.children.items():
+            for value in child.getdata(name+key, datastore):
+                yield value
 
     def __eq__(self, node):
         if (not super(Directory,self).__eq__(node)):
@@ -235,3 +251,7 @@ class File(Node):
             element = etree.SubElement(xml, "hash", type="str")
             element.text = str(self.hash)
         return xml
+
+    def getdata(self, name, datastore):
+        hashdir, hashfile = datastore.getPath(self)
+        yield "cp " + hashdir + "/" + hashfile + " " + name

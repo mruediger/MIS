@@ -25,14 +25,18 @@ class Datastore(object):
         
         node.hash = hl.hexdigest()
 
-        hashdir  = self.path + '/' + node.hash[:2]
-        hashfile = hashdir + '/' + node.hash[2:]
-    
+        hashdir, hashfile = self.getPath(node)
+
         if (not os.path.exists(hashdir)):
             os.makedirs(hashdir)
 
         if (not os.path.exists(hashfile)):
             shutil.copyfile(path, hashfile)
+
+    def getPath(self, node):
+        hashdir  = self.path + '/' + node.hash[:2]
+        hashfile = hashdir + '/' + node.hash[2:]
+        return (hashdir, hashfile)
 
     def getData(self, node, flags='r'):
         return open(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])
