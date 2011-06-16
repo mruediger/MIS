@@ -12,14 +12,14 @@ def export(argv):
         print e
         return
 
-    for dir in (destination, datastore):
+    for dir in (destination_path, datastore_path):
         if not (os.path.exists(dir) and os.path.isdir(dir)):
             print ("ERROR: %s not a direfctory" % dir)
             return
 
     manifest = mfs.manifest.manifestFromPath(
         manifest_path,
-        mfs.datastore.Datastore(datastore))
+        mfs.datastore.Datastore(datastore_path))
 
     for file in manifest:
         file.writeTo(destination)
