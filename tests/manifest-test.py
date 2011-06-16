@@ -48,16 +48,19 @@ class TestManifest(unittest.TestCase):
         root.children['file_b'] = File("file_b")
         root.children['file_b'].hash = "asdf5678"
         root.children['dir'] = Directory("dir")
-        root.children['dir'].children['subfile_a'] = File('file_a')
+        root.children['dir'].children['subfile_a'] = File('subfile_a')
         root.children['dir'].children['subfile_a'].hash = "fda1234"
 
-        root.children['dir'].children['subfile_b'] = File('file_b')
+        root.children['dir'].children['subfile_b'] = File('subfile_b')
         root.children['dir'].children['subfile_b'].hash = "fda1234"
         manifest = Manifest(root)
-        datastore = mfs.datastore.Datastore('/home/bag/projects/diplomarbeit/src/datastore')
 
-        for file in manifest.getdata(datastore):
-            print file
+        files = []
+
+        for file in manifest:
+            files.append(file)
+        
+        self.assertEquals(6,len(files))
 
 
 if __name__ == '__main__':

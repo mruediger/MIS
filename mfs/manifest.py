@@ -69,7 +69,6 @@ def searchFiles(path, datastore, name):
             node.children[child] = searchFiles(childpath, datastore, child)
         return node
 
-    #if none of the above, test maually
     if stat.S_ISSOCK(stats.st_mode):
         node = Socket(name, stats)
         return node
@@ -98,8 +97,8 @@ class Manifest(object):
     def __eq__(self, manifest):
         return self.root == manifest.root
 
-    def getdata(self, datastore):
-        for child in self.root.getdata('', datastore):
+    def __iter__(self):
+        for child in self.root:
             yield(child)
 
 class Node(object):
@@ -146,6 +145,9 @@ class Node(object):
                 if (hasattr(self,key) != hasattr(node,key)):
                     return False
         return True
+    
+    def __iter__(self):
+        yield self
 
     def copy(self):
         retval = self.__new__(type(self), self.name)
@@ -165,9 +167,6 @@ class Node(object):
             element = etree.SubElement(xml, key, type=type(attr).__name__)
             element.text = str(attr)
         return xml
-
-    def getdata(self, name, datastore):
-        yield "TODO: " + name
 
     #only defined for special files
     st_rdev = property(lambda self: 0)
@@ -191,10 +190,6 @@ class Device(Node):
     #the rest is handled automaticly by setStat
     __slots__ = Node.__slots__ + ['st_rdev']
 
-
-    def getdata(self, name, datastore):
-        yield "mknod " + name
-
 class FIFO(Node):
     pass
 
@@ -217,12 +212,11 @@ class Directory(Node):
         retval.children = dict()
         return retval
 
-    def getdata(self, name, datastore):
-        name += '/'
-        yield "mkdir " + name
+    def __iter__(self):
+        yield self
         for key, child in self.children.items():
-            for value in child.getdata(name+key, datastore):
-                yield value
+            for retval in child:
+                yield retval
 
     def __eq__(self, node):
         if (not super(Directory,self).__eq__(node)):
@@ -251,7 +245,3 @@ class File(Node):
             element = etree.SubElement(xml, "hash", type="str")
             element.text = str(self.hash)
         return xml
-
-    def getdata(self, name, datastore):
-        hashdir, hashfile = datastore.getPath(self)
-        yield "cp " + hashdir + "/" + hashfile + " " + name
