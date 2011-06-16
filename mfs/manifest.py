@@ -104,13 +104,13 @@ class Manifest(object):
 class Node(object):
     
     __slots__ = [
-        'name',
+        'name',         #TODO redundant
         'inode',
         'st_uid',
         'st_gid',
-        'st_blksize',
-        'st_size',
-        'st_blocks',
+        'st_blksize',   #TODO redundant
+        'st_size',      #TODO redundant
+        'st_blocks',    #TODO redundant
         'st_atime',
         'st_mtime',
         'st_ctime',
