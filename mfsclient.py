@@ -5,7 +5,7 @@ import mfs
 
 def export(argv):
     try:
-        manifest_path  = argv[2]
+        manifest_file  = argv[2]
         datastore_path = argv[3]
         destination_path = argv[4]
     except IndexError as e:
@@ -14,15 +14,18 @@ def export(argv):
 
     for dir in (destination_path, datastore_path):
         if not (os.path.exists(dir) and os.path.isdir(dir)):
-            print ("ERROR: %s not a direfctory" % dir)
+            print ("ERROR: %s not a directory" % dir)
             return
 
-    manifest = mfs.manifest.manifestFromPath(
-        manifest_path,
-        mfs.datastore.Datastore(datastore_path))
+    datastore = mfs.datastore.Datastore(datastore_path)
 
-    for file in manifest:
-        file.writeTo(destination)
+    manifest = mfs.manifest.manifestFromXML(manifest_file)
+
+    from mfs.exporter import Exporter
+    exporter = Exporter()
+
+    for child in manifest.root.children.itervalues():
+        exporter.export(child, destination_path, datastore)
     
     
 def print_help(argv):
