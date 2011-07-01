@@ -23,7 +23,7 @@ class DatastoreTest(unittest.TestCase):
 
         datastore = Datastore()
         datastore.saveData(node, tmpfile)
-        self.assertEquals(file(tmpfile).read(), datastore.getData(node))
+        self.assertEquals(file(tmpfile).read(), datastore.getData(node).read())
 
         os.remove(tmpfile)
 
