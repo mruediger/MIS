@@ -8,12 +8,12 @@ class Datastore(object):
             self.store = MemStore()
         else:
             if (not os.path.exists(path)):
-                raise ValueError("path none existend")
+                raise ValueError("path does not exist")
             self.store = DirStore(path)
 
     def saveData(self, node, path):
         if (not os.path.exists(path)):
-            raise ValueError("file none existend")
+            raise ValueError("file does not exist")
 
         fobj = open(path, 'r')
         hl = hashlib.sha1()
@@ -41,10 +41,19 @@ class MemStore(object):
 
     def saveData(self, node, fobj):
         fobj.seek(0)
-        self.data[node.hash] = fobj.read()
+        self.data[node.hash] = MemStoreContainer(fobj.read())
+        fobj.close()
 
     def getData(self, node):
         return self.data[node.hash]
+
+class MemStoreContainer(object):
+    
+    def __init__(self, data):
+        self.data = data
+
+    def read(self, count=0):
+        return self.data
 
 class DirStore(object):
     def __init__(self, path):
@@ -59,10 +68,13 @@ class DirStore(object):
         if (not os.path.exists(destfile)):
             dest = file(destfile,'w')
             fobj.seek(0)
-            for data in fobj.read(1024 * 1024):
-                dest.write(data)
-            dest.flush()
+            buf = fobj.read(1024)
+            while len(buf):
+                dest.write(buf)
+                buf = fobj.read(1024)
 
+            dest.close()
+            fobj.close()
 
     def getData(self, node):
         return open(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])
