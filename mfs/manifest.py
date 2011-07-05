@@ -237,7 +237,7 @@ class Directory(Node):
 
             for child in self.children:
                 if not child in node.children:
-                    return false
+                    return False
             
             return True
 

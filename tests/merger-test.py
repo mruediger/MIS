@@ -42,6 +42,7 @@ class MergerTest(unittest.TestCase):
         self.assertEquals(target, self.orig)
 
     def testRecursive(self):
+        """test merge with subfolders"""
         newroot = Directory("orig")
         testdir = Directory('testdir')
 
