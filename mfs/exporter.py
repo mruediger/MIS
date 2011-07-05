@@ -16,28 +16,50 @@ class Exporter(object):
             pass
 
         if isinstance(node, mfs.manifest.SymbolicLink):
-            pass
+            try:
+                os.symlink(node.target, path)
+            except OSError:
+                print "ERROR: " + path
+            return
 
         if isinstance(node, mfs.manifest.Device):
-            pass
+            os.makedev(
+                os.major(node.st_rdev),
+                os.minor(node.st_rdev)
+                )
 
         if isinstance(node, mfs.manifest.FIFO):
-            pass
+            os.mkfifo(path)
 
         if isinstance(node, mfs.manifest.Directory):
-            pass
+            try:
+                os.mkdir(path)
+            except OSError:
+                pass
+
+            for child in node.children:
+                self.export(child, path, datastore)
 
         if isinstance(node, mfs.manifest.File):
             if (node.st_nlink > 1):
                 if (node.hash in self.linkcache):
                     os.link(self.linkcache[node.hash], path)
+                    return
                 else:
                     self.linkcache[node.hash] = path
-                    source = datastore.getData(node)
-                    dest = file(target, 'w')
-                    for data in source.read(1024):
-                        dest.write(data)
-                    dest.flush()
+
+            source = datastore.getData(node)
+            dest = file(path, 'w')
+            
+            buf = source.read(1024)
+
+            while len(buf):
+                print dest.write(buf)
+                print len(buf)
+                buf = source.read(1024)
+
+            source.close()
+            dest.close()
 
         
         os.chown(path, node.st_uid, node.st_gid)        #TODO security

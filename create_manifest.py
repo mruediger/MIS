@@ -14,7 +14,9 @@ def run(sourcepath, datastore, output):
     if (output is None):
         print xml
     else:
-        pass
+        f = file(output, 'w')
+        f.write(xml)
+        f.close()
 
 if __name__ == "__main__":
     import argparse, os, sys
