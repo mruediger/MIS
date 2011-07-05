@@ -89,7 +89,7 @@ class Operations(llfuse.Operations):
         del self.inodecache[fh]
 
     def readdir(self, fh, off):
-        for child in self.inodecache[fh].children.values()[off:]:
+        for child in self.inodecache[fh].children[off:]:
             off += 1
             yield(child.name , self.getattrFromNode(child), off)
 
@@ -98,7 +98,7 @@ class Operations(llfuse.Operations):
             return self.getattr(parrent_ino) #FIXME
         else:
             try:
-                return self.getattrFromNode(self.inodecache[parrent_ino].children[name])
+                return self.getattrFromNode(self.inodecache[parrent_ino].children_as_dict[name])
             except KeyError:
                 raise llfuse.FUSEError(errno.ENOENT)
 

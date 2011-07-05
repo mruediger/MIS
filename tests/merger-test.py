@@ -42,6 +42,7 @@ class MergerTest(unittest.TestCase):
         self.assertEquals(target, self.orig)
 
     def testRecursive(self):
+        """test merge with subfolders"""
         newroot = Directory("orig")
         testdir = Directory('testdir')
 
@@ -50,15 +51,15 @@ class MergerTest(unittest.TestCase):
         new = Manifest(newroot)
         target = merge(self.orig, new)
         self.assertEquals(
-            newroot.children_as_dict()['testdir'].children_as_dict()['new_file'], 
-            target.root.children_as_dict()['testdir'].children_as_dict()['new_file'])
-        self.assertTrue('another_dir' in target.root.children_as_dict()['testdir'].children_as_dict())
+            newroot.children_as_dict['testdir'].children_as_dict['new_file'], 
+            target.root.children_as_dict['testdir'].children_as_dict['new_file'])
+        self.assertTrue('another_dir' in target.root.children_as_dict['testdir'].children_as_dict)
 
     def testUnionfs(self):
         """test merge of unionfs folders"""  
         target = merge(self.orig, self.orig)
-        self.assertFalse('testfile_a' not in target.root.children_as_dict())
-        self.assertFalse('deep_file' not in target.root.children_as_dict()['testdir'].children_as_dict()['another_dir'].children_as_dict())
+        self.assertFalse('testfile_a' not in target.root.children_as_dict)
+        self.assertFalse('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
 
 
         newroot = Directory("orig")
@@ -78,9 +79,9 @@ class MergerTest(unittest.TestCase):
         
         new = Manifest(newroot)
         target = merge(self.orig, new)
-        self.assertTrue('.unionfs' not in target.root.children_as_dict())
-        self.assertTrue('testfile_a' not in target.root.children_as_dict())
-        self.assertTrue('deep_file' not in target.root.children_as_dict()['testdir'].children_as_dict()['another_dir'].children_as_dict())
+        self.assertTrue('.unionfs' not in target.root.children_as_dict)
+        self.assertTrue('testfile_a' not in target.root.children_as_dict)
+        self.assertTrue('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
 
     def testAUFS(self):
         """test merge of aufs folders"""
@@ -89,8 +90,8 @@ class MergerTest(unittest.TestCase):
 
         target = merge(self.orig, self.orig)
         
-        self.assertFalse('testfile_a' not in target.root.children_as_dict())
-        self.assertFalse('deep_file' not in target.root.children_as_dict()['testdir'].children_as_dict()['another_dir'].children_as_dict())
+        self.assertFalse('testfile_a' not in target.root.children_as_dict)
+        self.assertFalse('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
 
         newroot = Directory("orig")
         newroot.children.append(File('.wh.testfile_a'))
@@ -106,8 +107,8 @@ class MergerTest(unittest.TestCase):
         new = Manifest(newroot)
         target = merge(self.orig, new)
 
-        self.assertTrue('testfile_a' not in target.root.children_as_dict())
-        self.assertTrue('deep_file' not in target.root.children_as_dict()['testdir'].children_as_dict()['another_dir'].children_as_dict())
+        self.assertTrue('testfile_a' not in target.root.children_as_dict)
+        self.assertTrue('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
 
 
 if __name__ == '__main__':

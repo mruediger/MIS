@@ -24,7 +24,7 @@ def export(argv):
     from mfs.exporter import Exporter
     exporter = Exporter()
 
-    for child in manifest.root.children.itervalues():
+    for child in manifest.root.children:
         exporter.export(child, destination_path, datastore)
     
     

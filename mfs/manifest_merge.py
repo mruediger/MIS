@@ -10,59 +10,46 @@ def unionmerge(target, unionfsdir):
                 if checkdel.name == child.name.rstrip('_HIDDEN~'):
                     target.children.remove(checkdel)
         else:
-            unionmerge(target.children_as_dict()[child.name], child)
+            unionmerge(target.children_as_dict[child.name], child)
 
-def aufsmerge(target):
-    todel = list()
-    child_dict = target.children_as_dict()
-    for child in target.children:
-        if child.name.startswith('.wh.'):
-            target.children.remove(child_dict[child.name.lstrip('.wh.')])
-        elif isinstance(child, Directory):
-            aufsmerge(child)
+def merge_children(orig, new):
+    filenames = set()
+    for child in orig.children + new.children:
+        filenames.add(child.name)
 
-    for key in todel:
-        target.children.remove(key)
+    odict = orig.children_as_dict
+    ndict = new.children_as_dict
+ 
 
-def _merge(orig, new, target):
-    assert isinstance(orig, Directory)
-    assert isinstance(new, Directory)
-    assert isinstance(target, Directory)
+    retval = list()
 
-    tmp_children = dict()
+    for filename in filenames:
+                
+        #filter AUFS files
+        if ('.wh.' + filename in ndict):
+            continue
+        if ('.wh.' + filename in odict):
+            continue
 
-    #copy original nodes
-    for child in orig.children:
-        tmp_children[child.name] = child.copy()
+        if (filename in ndict):
+            newchild = ndict[filename].copy()
+        else:
+            newchild = odict[filename].copy()
 
-    #overwrite with changed nodes
-    for child in new.children:
-        tmp_children[child.name] = child.copy()
+        if isinstance(newchild, Directory):
+            newchild.children = merge_children(
+                odict.get(newchild.name, Directory("")),
+                ndict.get(newchild.name, Directory(""))
+            )
+        retval.append(newchild)
+        
 
-    target.children = tmp_children.values()
-
-    #recursion through all nodes
-    for child in target.children:
-        if isinstance(child, Directory):
-            try:
-                _merge(
-                    orig.children_as_dict().get(child.name, Directory("")), 
-                    new.children_as_dict().get(child.name, Directory("")), 
-                    child
-                )
-            except KeyError:
-                continue
-
-
-def children_to_dict(children):
-    retval = dict()
-    for child in children:
-        retval[child.name] = child
     return retval
+        
 
 def merge(orig, new):
-    target = orig.root.copy()
-    _merge(orig.root, new.root, target)
+    target = new.root.copy()
+    target.children = merge_children(orig.root, new.root)
 
     #check for unionfs
     for child in target.children:
@@ -70,8 +57,5 @@ def merge(orig, new):
             unionmerge(target, child)
             target.children.remove(child)
 
-    #check for aufs
-    if any( child.name.startswith('.wh') for child in target.children ):
-        aufsmerge(target)
-
     return Manifest(target)
+
