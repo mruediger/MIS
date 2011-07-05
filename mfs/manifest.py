@@ -216,12 +216,6 @@ class Directory(Node):
         retval.children = list()
         return retval
 
-    def children_as_dict(self):
-        retval = dict()
-        for child in self.children:
-            retval[child.name] = child
-        return retval
-
     def __iter__(self):
         yield self
         for child in self.children:
@@ -248,6 +242,8 @@ class Directory(Node):
                 retval += '\n'
                 retval += self.name + '/' + string
         return retval
+
+    children_as_dict = property(lambda self: dict( (child.name, child) for child in self.children ))
 
 class File(Node):
 

@@ -10,18 +10,18 @@ def unionmerge(target, unionfsdir):
                 if checkdel.name == child.name.rstrip('_HIDDEN~'):
                     target.children.remove(checkdel)
         else:
-            unionmerge(target.children_as_dict()[child.name], child)
+            unionmerge(target.children_as_dict[child.name], child)
 
 def merge_children(orig, new):
     filenames = set()
     for child in orig.children + new.children:
         filenames.add(child.name)
 
-    odict = orig.children_as_dict()
-    ndict = new.children_as_dict()
-    
-    retval = list()
+    odict = orig.children_as_dict
+    ndict = new.children_as_dict
+ 
 
+    retval = list()
 
     for filename in filenames:
                 
