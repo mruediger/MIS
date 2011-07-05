@@ -26,10 +26,13 @@ class TestManifest(unittest.TestCase):
                 self.assertFalse(True)
 
         manifest = mfs.manifest.manifestFromPath('testdir')
-        self.assertTrue(stat.S_ISREG(manifest.root.children['testfile_a'].st_mode))
-        self.assertTrue(stat.S_ISDIR(manifest.root.children['testdir'].st_mode))
-        self.assertTrue(stat.S_ISCHR(manifest.root.children['mixer-testdev'].st_mode))
-        self.assertEquals(os.stat('testdir/mixer-testdev').st_rdev, manifest.root.children['mixer-testdev'].st_rdev)
+        childdict = dict()
+        for child in manifest.root.children:
+            childdict[child.name] = child
+        self.assertTrue(stat.S_ISREG(childdict['testfile_a'].st_mode))
+        self.assertTrue(stat.S_ISDIR(childdict['testdir'].st_mode))
+        self.assertTrue(stat.S_ISCHR(childdict['mixer-testdev'].st_mode))
+        self.assertEquals(os.stat('testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].st_rdev)
 
     def testToXML(self):
         datastore = mfs.datastore.Datastore('datastore')
@@ -38,21 +41,35 @@ class TestManifest(unittest.TestCase):
         manifest_new = mfs.manifest.manifestFromXML(StringIO(xml))
         self.assertEquals(manifest_orig, manifest_new)
 
-        manifest_new.root.children['testfile_a'].name = "kartoffelbrei"
+        for child in manifest_new.root.children:
+            if child.name == "testfile_a":
+                child.name = "kartoffelbrei"
         self.assertNotEquals(manifest_orig, manifest_new)
 
     def testIterate(self):
+        
+        
         root = Directory("root")
-        root.children['file_a'] = File("file_a")
-        root.children['file_a'].hash = "asdf1234"
-        root.children['file_b'] = File("file_b")
-        root.children['file_b'].hash = "asdf5678"
-        root.children['dir'] = Directory("dir")
-        root.children['dir'].children['subfile_a'] = File('subfile_a')
-        root.children['dir'].children['subfile_a'].hash = "fda1234"
+        
+        node = File("file_a")
+        node.hash = "asdf1234"
+        root.children.append(node)
 
-        root.children['dir'].children['subfile_b'] = File('subfile_b')
-        root.children['dir'].children['subfile_b'].hash = "fda1234"
+        node = File("file_b")
+        node.hash = "asdf5678"
+        root.children.append(node)
+
+        dirnode = Directory("dir")
+        root.children.append(dirnode)
+
+        node = File('subfile_a')
+        node.hash = "fda1234"
+        dirnode.children.append(node)
+
+        node = File('subfile_b')
+        node.hash = "fda1234"
+        dirnode.children.append(node)
+
         manifest = Manifest(root)
 
         files = []

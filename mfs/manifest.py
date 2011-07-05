@@ -11,7 +11,7 @@ def manifestFromPath(path, datastore=None):
 def manifestFromXML(xml_file):
 
     #A stack with a dummy at the bottom
-    parent = deque( [type('tmptype',(object,), dict(children=dict()))] )
+    parent = deque( [type('tmptype',(object,), dict(children=list()))] )
 
     for action, element in etree.iterparse(xml_file, events=("start","end")):
         if (element.tag == "file" and action=="start"):
@@ -38,11 +38,11 @@ def manifestFromXML(xml_file):
         if (element.tag == "file" and action=="end"):
             me = parent.pop() 
             mum = parent.pop()
-            mum.children[me.name] = me
+            mum.children.append(me)
             parent.append(mum)
             element.clear()
     
-    return Manifest(parent.pop().children.values()[0])
+    return Manifest(parent.pop().children[0])
 
 def searchFiles(path, datastore, name):
     if (not os.path.exists(path)):
@@ -66,7 +66,7 @@ def searchFiles(path, datastore, name):
         node = Directory(name, stats)
         for child in os.listdir(path):
             childpath = path + '/' + child
-            node.children[child] = searchFiles(childpath, datastore, child)
+            node.children.append(searchFiles(childpath, datastore, child))
         return node
 
     if stat.S_ISSOCK(stats.st_mode):
@@ -104,7 +104,7 @@ class Manifest(object):
 class Node(object):
     
     __slots__ = [
-        'name',         #TODO redundant
+        'name',
         'inode',
         'st_uid',
         'st_gid',
@@ -136,6 +136,10 @@ class Node(object):
         for key in self.__slots__:
             #inode is dynamic
             if (key == 'inode') : continue
+
+            #children may differ in order
+            if (key == 'children') : continue
+
             #time may differ slightly
             if (key.endswith('time')) : continue
             if (hasattr(self, key) and hasattr(node, key)):
@@ -199,22 +203,28 @@ class Directory(Node):
     
     def __init__(self, name, stats=None):
         Node.__init__(self,name, stats)
-        self.children = dict()
+        self.children = list()
           
     def toXML(self):
         xml = super(Directory,self).toXML()
-        for child in self.children.values():
+        for child in self.children:
             xml.append(child.toXML())
         return xml
 
     def copy(self):
         retval = super(Directory,self).copy()
-        retval.children = dict()
+        retval.children = list()
+        return retval
+
+    def children_as_dict(self):
+        retval = dict()
+        for child in self.children:
+            retval[child.name] = child
         return retval
 
     def __iter__(self):
         yield self
-        for key, child in self.children.items():
+        for child in self.children:
             for retval in child:
                 yield retval
 
@@ -222,7 +232,14 @@ class Directory(Node):
         if (not super(Directory,self).__eq__(node)):
             return False
         else:
-            return all(self.children[key] == node.children[key] for key in self.children.iterkeys())
+            if not (len(node.children) == len(self.children)):
+                return False
+
+            for child in self.children:
+                if not child in node.children:
+                    return false
+            
+            return True
 
     def __str__(self):
         retval = self.name

@@ -37,7 +37,7 @@ class Exporter(object):
             except OSError:
                 pass
 
-            for child in node.children.itervalues():
+            for child in node.children:
                 self.export(child, path, datastore)
 
         if isinstance(node, mfs.manifest.File):
@@ -54,7 +54,8 @@ class Exporter(object):
             buf = source.read(1024)
 
             while len(buf):
-                dest.write(buf)
+                print dest.write(buf)
+                print len(buf)
                 buf = source.read(1024)
 
             source.close()

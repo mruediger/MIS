@@ -51,9 +51,18 @@ class MemStoreContainer(object):
     
     def __init__(self, data):
         self.data = data
+        self.pos = 0
 
     def read(self, count=0):
-        return self.data
+        if (count == 0):
+            return self.data
+        else:
+            pos = self.pos
+            self.pos = pos+count
+            return self.data[pos:pos+count]
+
+    def close(self):
+        pass
 
 class DirStore(object):
     def __init__(self, path):
