@@ -18,15 +18,19 @@ class Exporter(object):
         if isinstance(node, mfs.manifest.SymbolicLink):
             try:
                 os.symlink(node.target, path)
-            except OSError:
-                print "ERROR: " + path
+            except OSError as (errno, strerror):
+                print "symlink: {0}: {1}".format(path, strerror)
             return
 
         if isinstance(node, mfs.manifest.Device):
-            os.mknod(path, node.st_mode, os.makedev(
-                os.major(node.st_rdev),
-                os.minor(node.st_rdev)
+            try:
+                os.mknod(path, node.st_mode, os.makedev(
+                    os.major(node.st_rdev),
+                    os.minor(node.st_rdev)
                 ))
+            except OSError as (errno, strerror):
+                print "mknod {0}: {1}".format(path, strerror)
+                return
 
         if isinstance(node, mfs.manifest.FIFO):
             os.mkfifo(path)
@@ -34,8 +38,8 @@ class Exporter(object):
         if isinstance(node, mfs.manifest.Directory):
             try:
                 os.mkdir(path)
-            except OSError:
-                pass
+            except OSError as (errno, strerror):
+                print "mkdir {0}: {1}".format(path, strerror)
 
             for child in node.children:
                 self.export(child, path, datastore)
@@ -62,5 +66,5 @@ class Exporter(object):
         
         os.chown(path, node.st_uid, node.st_gid)        #TODO security
         os.utime(path, (node.st_atime, node.st_mtime))
-        #os.chmod(path, node.st_mode)                    #TODO security
+        os.chmod(path, node.st_mode)                    #TODO security
 
