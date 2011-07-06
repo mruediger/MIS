@@ -23,10 +23,10 @@ class Exporter(object):
             return
 
         if isinstance(node, mfs.manifest.Device):
-            os.makedev(
+            os.mknod(path, node.st_mode, os.makedev(
                 os.major(node.st_rdev),
                 os.minor(node.st_rdev)
-                )
+                ))
 
         if isinstance(node, mfs.manifest.FIFO):
             os.mkfifo(path)
@@ -42,21 +42,19 @@ class Exporter(object):
 
         if isinstance(node, mfs.manifest.File):
             if (node.st_nlink > 1):
-                if (node.hash in self.linkcache):
-                    os.link(self.linkcache[node.hash], path)
+                if (node.orig_inode in self.linkcache):
+                    os.link(self.linkcache[node.orig_inode], path)
                     return
                 else:
-                    self.linkcache[node.hash] = path
+                    self.linkcache[node.orig_inode] = path
 
             source = datastore.getData(node)
             dest = file(path, 'w')
             
             buf = source.read(1024)
-
             while len(buf):
-                print dest.write(buf)
-                print len(buf)
                 buf = source.read(1024)
+                dest.write(buf)
 
             source.close()
             dest.close()
@@ -64,5 +62,5 @@ class Exporter(object):
         
         os.chown(path, node.st_uid, node.st_gid)        #TODO security
         os.utime(path, (node.st_atime, node.st_mtime))
-        os.chmod(path, node.st_mode)                    #TODO security
+        #os.chmod(path, node.st_mode)                    #TODO security
 
