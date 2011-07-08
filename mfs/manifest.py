@@ -63,10 +63,10 @@ def searchFiles(root, subpath, datastore, name, unionfs=None):
 
     if stat.S_ISREG(stats.st_mode):
         if unionfs and os.path.exists(unionfs + subpath):
-            return DeleteNode(name, stats)
+            return DeleteNode(name)
 
         if name.startswith(".wh."):
-            return DeleteNode(name[4:], stats)
+            return DeleteNode(name[4:])
         
         node = File(name, stats)
         node.orig_inode = stats.st_ino
@@ -264,5 +264,26 @@ class File(Node):
             element.text = str(self.hash)
         return xml
 
-class DeleteNode(Node):
-    pass
+class DeleteNode(object):
+
+    __slots__ = [
+        '__name'
+    ]
+
+    def __init__(self, name):
+        self.__name = name
+
+    def toXML(self):
+        xml = etree.Element("file")
+        xml.attrib["name"] = self.__name
+        xml.attrib["type"] = type(self).__name__
+        return xml
+
+    def __iter__(self):
+        yield self
+
+    def __eq__(self, node):
+        return isinstance(node ,DeleteNode) and (self.__name == node.__name)
+
+    name = property(lambda self: "delnode:" + self.__name)
+
