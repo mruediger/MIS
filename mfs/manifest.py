@@ -23,21 +23,21 @@ def manifestFromXML(xml_file):
                 setattr(parent[len(parent) - 1], element.tag, eval(element.get("type"))(element.text))
             except TypeError, err:
                 print element.tag + ":" + str(err)
-                print "type is: " + str(type(element.text))
+                    print "type is: " + str(type(element.text))
 
-        if (element.tag == "hash" and action=="end"):
-            parent[len(parent) - 1].hash = element.text
+            if (element.tag == "hash" and action=="end"):
+                parent[len(parent) - 1].hash = element.text
 
-        if (element.tag == "orig_inode" and action=="end"):
-            parent[len(parent) - 1].orig_inode = int(element.text)
+            if (element.tag == "orig_inode" and action=="end"):
+                parent[len(parent) - 1].orig_inode = int(element.text)
 
-        if (element.tag == "target" and action=="end"):
-            parent[len(parent) - 1].target = element.text
-            
-        #because root will get removed to, we need a dummy
-        if (element.tag == "file" and action=="end"):
-            me = parent.pop() 
-            mum = parent.pop()
+            if (element.tag == "target" and action=="end"):
+                parent[len(parent) - 1].target = element.text
+                
+            #because root will get removed to, we need a dummy
+            if (element.tag == "file" and action=="end"):
+                me = parent.pop() 
+                mum = parent.pop()
             mum.children.append(me)
             parent.append(mum)
             element.clear()
