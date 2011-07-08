@@ -33,13 +33,21 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(stat.S_ISDIR(childdict['testdir'].st_mode))
         self.assertTrue(stat.S_ISCHR(childdict['mixer-testdev'].st_mode))
         self.assertEquals(os.stat('testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].st_rdev)
+
+        self.assertFalse('.unionfs' in childdict)
         
-        has_del_node = False
-        for child in manifest.root.children:
+        has_wh_del_node = False
+        has_unionfs_del_node = False
+        for child in manifest.root:
             if isinstance(child, DeleteNode):
-                self.assertEquals('testfile_a', child.name)
-                has_del_node = True
-        self.assertTrue(has_del_node)
+                if child.name == 'testfile_a':
+                    has_wh_del_node = True
+                if child.name == 'another_file':
+                    has_unionfs_del_node = True
+
+        self.assertTrue(has_wh_del_node)
+        self.assertTrue(has_unionfs_del_node)
+        
 
     def testToXML(self):
         datastore = mfs.datastore.Datastore('datastore')

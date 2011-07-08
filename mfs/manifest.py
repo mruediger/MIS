@@ -5,7 +5,11 @@ from lxml import etree
 from collections import deque
 
 def manifestFromPath(path, datastore=None):
-    root = searchFiles(path, datastore, name='/')
+    if (os.path.exists(path + '/.unionfs')):
+        unionfspath = path + '/.unionfs'
+        root = searchFiles(path, '', datastore, '/', unionfspath)
+    else:
+        root = searchFiles(path, '', datastore, '/')
     return Manifest(root)
 
 def manifestFromXML(xml_file):
@@ -25,28 +29,30 @@ def manifestFromXML(xml_file):
                 print element.tag + ":" + str(err)
                 print "type is: " + str(type(element.text))
 
-            if (element.tag == "hash" and action=="end"):
-                parent[len(parent) - 1].hash = element.text
+        if (element.tag == "hash" and action=="end"):
+            parent[len(parent) - 1].hash = element.text
 
-            if (element.tag == "orig_inode" and action=="end"):
-                parent[len(parent) - 1].orig_inode = int(element.text)
+        if (element.tag == "orig_inode" and action=="end"):
+            parent[len(parent) - 1].orig_inode = int(element.text)
 
-            if (element.tag == "target" and action=="end"):
-                parent[len(parent) - 1].target = element.text
-                
-            #because root will get removed to, we need a dummy
-            if (element.tag == "file" and action=="end"):
-                me = parent.pop() 
-                mum = parent.pop()
-                mum.children.append(me)
-                parent.append(mum)
-                element.clear()
+        if (element.tag == "target" and action=="end"):
+            parent[len(parent) - 1].target = element.text
+            
+        #because root will get removed to, we need a dummy
+        if (element.tag == "file" and action=="end"):
+            me = parent.pop() 
+            mum = parent.pop()
+            mum.children.append(me)
+            parent.append(mum)
+            element.clear()
     
     return Manifest(parent.pop().children[0])
 
-def searchFiles(path, datastore, name, unionfs=False):
-    if (not os.path.exists(path)):
-        return
+def searchFiles(root, subpath, datastore, name, unionfs=None):
+    
+    #the root + subpath split is needed for unionfs check
+    path = root + subpath 
+    assert(os.path.exists(path))
 
     stats = os.lstat(path)
 
@@ -56,33 +62,36 @@ def searchFiles(path, datastore, name, unionfs=False):
         return node
 
     if stat.S_ISREG(stats.st_mode):
+        if unionfs and os.path.exists(unionfs + subpath):
+            return DeleteNode(name, stats)
+
         if name.startswith(".wh."):
-            node = DeleteNode(name[4:], stats)
-        else:
-            node = File(name, stats)
-            node.orig_inode = stats.st_ino
-            if (datastore is not None):
-                datastore.saveData(node, path)
+            return DeleteNode(name[4:], stats)
+        
+        node = File(name, stats)
+        node.orig_inode = stats.st_ino
+        if (datastore is not None):
+            datastore.saveData(node, path)
         return node
         
     if stat.S_ISDIR(stats.st_mode):
         node = Directory(name, stats)
-        for child in os.listdir(path):
-            childpath = path + '/' + child
-            node.children.append(searchFiles(childpath, datastore, child))
+        for childname in os.listdir(path):
+            childpath = subpath + '/' + childname
+            if (childname == '.unionfs'): continue
+
+            node.children.append(searchFiles(root, childpath, datastore, childname, unionfs))
+
         return node
 
     if stat.S_ISBLK(stats.st_mode):
-        node = Device(name, stats)
-        return node
+        return Device(name, stats)
 
     if stat.S_ISCHR(stats.st_mode):
-        node = Device(name, stats)
-        return node
+        return Device(name, stats)
 
     if stat.S_ISFIFO(stats.st_mode):
-        node = FIFO(name, stats)
-        return node
+        return FIFO(name, stats)
 
 class Manifest(object):
 
