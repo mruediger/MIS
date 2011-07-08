@@ -69,10 +69,6 @@ def searchFiles(path, datastore, name):
             node.children.append(searchFiles(childpath, datastore, child))
         return node
 
-    if stat.S_ISSOCK(stats.st_mode):
-        node = Socket(name, stats)
-        return node
-
     if stat.S_ISBLK(stats.st_mode):
         node = Device(name, stats)
         return node
@@ -174,9 +170,6 @@ class Node(object):
 
     #only defined for special files
     st_rdev = property(lambda self: 0)
-
-class Socket(Node):
-    pass
 
 class SymbolicLink(Node):
 

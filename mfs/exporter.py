@@ -12,9 +12,6 @@ class Exporter(object):
 
         path = target + '/' + node.name
 
-        if isinstance(node, mfs.manifest.Socket):
-            pass
-
         if isinstance(node, mfs.manifest.SymbolicLink):
             try:
                 os.symlink(node.target, path)

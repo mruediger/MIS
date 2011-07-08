@@ -8,7 +8,7 @@ import shutil
 from stat import *
 
 from mfs.exporter import Exporter
-from mfs.manifest import File, Directory, Socket, SymbolicLink
+from mfs.manifest import File, Directory, SymbolicLink
 from mfs.datastore import Datastore
 
 class TestExport(unittest.TestCase):
