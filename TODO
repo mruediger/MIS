@@ -1,32 +1,47 @@
-Mergen:
-    - rename, remove, add
-    - mit unionfs MODIFY noch testen
-    - mit AUFS
-    - mergen in eigenes programm verschieben
-    - mergen mit eigenen unittests ausstatten
+Performance Test:
+    parallels hashing pro/contra
+    dateisystem caching optimieren
+    einlesen von manifests langsam
 
-HASH:
-    hash erzeugung parallelisieren
+Mogliche Fehler:
+    Dateisystem locking anschauen
+    wie funktioniert SHA-1
 
-Dateisystem:
-    tuning
-    locking anschauen
+    unionfs mit whiteouts im basis layer testen (muessen bleiben)
+    
+Refactoring:
+    entschlacken von manifest klasse
 
 Filtern:
-    - scripte auf readonly + unionfs
+    - scripte auf readonly + unionfs und dann erst importieren
 
-MFSEdit:
-    - mfsls, mfscat, ...
 
 Exportieren:
+    bashscript + schreiben in sparse image
     - xen
     - vmware
     - virtualbox
 
+Fragen:
+    versionierung in manifest dateien
+    use cases (cli samples)
+    speichern wo und wie und warum
+
+Muse Have:
+    manifest erzeugung und datastore speicherung trennen
+        ( create_datastore manifest.xml source dest )
+    unionfs/aufs behandlung mit delete_nodes im manifest
+    export von delete_nodes als aufs/unionfs
+    editieren von images mit delete nodes
+
+    netzwerktool zum updaten von images uebers netz
+
+
+Use Cases:
+    update + filter layer ohne basis layer
+
 Nice to have:
+    cleanup datastore
     ACL
     ctime
 
-PROGGEN:
-    redundante infos aus manifest entfernen
-    dict -> list und dicts on the fly in fs.py
