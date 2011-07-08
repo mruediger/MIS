@@ -23,7 +23,7 @@ def manifestFromXML(xml_file):
                 setattr(parent[len(parent) - 1], element.tag, eval(element.get("type"))(element.text))
             except TypeError, err:
                 print element.tag + ":" + str(err)
-                    print "type is: " + str(type(element.text))
+                print "type is: " + str(type(element.text))
 
             if (element.tag == "hash" and action=="end"):
                 parent[len(parent) - 1].hash = element.text
@@ -38,13 +38,13 @@ def manifestFromXML(xml_file):
             if (element.tag == "file" and action=="end"):
                 me = parent.pop() 
                 mum = parent.pop()
-            mum.children.append(me)
-            parent.append(mum)
-            element.clear()
+                mum.children.append(me)
+                parent.append(mum)
+                element.clear()
     
     return Manifest(parent.pop().children[0])
 
-def searchFiles(path, datastore, name):
+def searchFiles(path, datastore, name, unionfs=False):
     if (not os.path.exists(path)):
         return
 
@@ -56,10 +56,13 @@ def searchFiles(path, datastore, name):
         return node
 
     if stat.S_ISREG(stats.st_mode):
-        node = File(name, stats)
-        node.orig_inode = stats.st_ino
-        if (datastore is not None):
-            datastore.saveData(node, path)
+        if name.startswith(".wh."):
+            node = DeleteNode(name[4:], stats)
+        else:
+            node = File(name, stats)
+            node.orig_inode = stats.st_ino
+            if (datastore is not None):
+                datastore.saveData(node, path)
         return node
         
     if stat.S_ISDIR(stats.st_mode):
@@ -251,3 +254,6 @@ class File(Node):
             element = etree.SubElement(xml, "hash", type="str")
             element.text = str(self.hash)
         return xml
+
+class DeleteNode(Node):
+    pass

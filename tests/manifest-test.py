@@ -8,7 +8,7 @@ import stat
 from StringIO import StringIO
 from lxml import etree
 
-from mfs.manifest import Directory,File,Manifest
+from mfs.manifest import Directory,File,DeleteNode,Manifest
 
 class TestManifest(unittest.TestCase):
 
@@ -33,6 +33,13 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(stat.S_ISDIR(childdict['testdir'].st_mode))
         self.assertTrue(stat.S_ISCHR(childdict['mixer-testdev'].st_mode))
         self.assertEquals(os.stat('testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].st_rdev)
+        
+        has_del_node = False
+        for child in manifest.root.children:
+            if isinstance(child, DeleteNode):
+                self.assertEquals('testfile_a', child.name)
+                has_del_node = True
+        self.assertTrue(has_del_node)
 
     def testToXML(self):
         datastore = mfs.datastore.Datastore('datastore')
@@ -47,8 +54,6 @@ class TestManifest(unittest.TestCase):
         self.assertNotEquals(manifest_orig, manifest_new)
 
     def testIterate(self):
-        
-        
         root = Directory("root")
         
         node = File("file_a")
