@@ -15,12 +15,12 @@ def manifestFromPath(path, datastore=None):
 def manifestFromXML(xml_file):
 
     #A stack with a dummy at the bottom
-    parent = deque( [type('tmptype',(object,), dict(children=list()))] )
+    parent = deque( [Directory("dummy")] )
 
     for action, element in etree.iterparse(xml_file, events=("start","end")):
         if (element.tag == "file" and action=="start"):
             node = eval(element.get("type"))(element.get("name"))
-            parent.append(node)
+            node.addTo(parent)
 
         if (element.tag.startswith("st_") and action=="end"):
             try:
@@ -42,8 +42,8 @@ def manifestFromXML(xml_file):
         if (element.tag == "file" and action=="end"):
             me = parent.pop() 
             mum = parent.pop()
-            mum.children.append(me)
-            parent.append(mum)
+            me.addTo(mum)
+            mum.addTo(parent)
             element.clear()
     
     return Manifest(parent.pop().children[0])
@@ -80,7 +80,8 @@ def searchFiles(root, subpath, datastore, name, unionfs=None):
             childpath = subpath + '/' + childname
             if (childname == '.unionfs'): continue
 
-            node.children.append(searchFiles(root, childpath, datastore, childname, unionfs))
+            child = searchFiles(root, childpath, datastore, childname, unionfs)
+            child.addTo(node)
 
         return node
 
@@ -161,6 +162,11 @@ class Node(object):
     def __iter__(self):
         yield self
 
+    def addTo(self, directory):
+        assert isinstance(directory, Directory)
+        directory.__children.append(self)
+        
+
     def copy(self):
         retval = self.__new__(type(self), self.name)
         for key in self.__slots__:
@@ -204,26 +210,26 @@ class FIFO(Node):
 
 class Directory(Node):
 
-    __slots__ = Node.__slots__ + [ 'children' ]
+    __slots__ = Node.__slots__ + [ '__children' ]
     
     def __init__(self, name, stats=None):
         Node.__init__(self,name, stats)
-        self.children = list()
+        self.__children = list()
           
     def toXML(self):
         xml = super(Directory,self).toXML()
-        for child in self.children:
+        for child in self.__children:
             xml.append(child.toXML())
         return xml
 
     def copy(self):
         retval = super(Directory,self).copy()
-        retval.children = list()
+        retval.__children = list()
         return retval
 
     def __iter__(self):
         yield self
-        for child in self.children:
+        for child in self.__children:
             for retval in child:
                 yield retval
 
@@ -231,24 +237,24 @@ class Directory(Node):
         if (not super(Directory,self).__eq__(node)):
             return False
         else:
-            if not (len(node.children) == len(self.children)):
+            if not (len(node.__children) == len(self.__children)):
                 return False
 
-            for child in self.children:
-                if not child in node.children:
+            for child in self.__children:
+                if not child in node.__children:
                     return False
             
             return True
 
     def __str__(self):
         retval = self.name
-        for child in self.children:
+        for child in self.__children:
             for string in str(child).splitlines():
                 retval += '\n'
                 retval += self.name + '/' + string
         return retval
 
-    children_as_dict = property(lambda self: dict( (child.name, child) for child in self.children ))
+    children_as_dict = property(lambda self: dict( (child.name, child) for child in self.__children ))
 
 class File(Node):
 
