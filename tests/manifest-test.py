@@ -40,9 +40,9 @@ class TestManifest(unittest.TestCase):
         has_unionfs_del_node = False
         for child in manifest.root:
             if isinstance(child, DeleteNode):
-                if child.name == 'delnode:testfile_a':
+                if child.name == 'testfile_a':
                     has_wh_del_node = True
-                if child.name == 'delnode:another_file':
+                if child.name == 'another_file':
                     has_unionfs_del_node = True
 
         self.assertTrue(has_wh_del_node)
