@@ -301,14 +301,13 @@ class DeleteNode(object):
     def __eq__(self, node):
         return isinstance(node ,DeleteNode) and (self._name == node._name)
 
-    name = property(lambda self: "delnode:" + self._name)
-
     def __hash__(self):
         """because the merger needs set support"""
         return self._name.__hash__()
         
-        
-
     def __str__(self):
         return "DeleteNode ({0})".format(self._name)
 
+    name = property(lambda self: "delnode:" + self._name)
+    aufsname = property(lambda self: ".wh." + self._name)
+    unionfsname = property(lambda self: self._name)

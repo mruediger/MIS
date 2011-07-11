@@ -41,6 +41,8 @@ class TestManifest(unittest.TestCase):
 
     def testDelNode(self):
         self.assertEquals(DeleteNode("test123"), DeleteNode("test123"))
+        self.assertEquals(".wh.testnode", DeleteNode("testnode").aufsname)
+        self.assertEquals("testnode", DeleteNode("testnode").unionfsname)
     
 
     def testToXML(self):
