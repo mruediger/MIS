@@ -20,7 +20,7 @@ def manifestFromXML(xml_file):
     for action, element in etree.iterparse(xml_file, events=("start","end")):
         if (element.tag == "file" and action=="start"):
             node = eval(element.get("type"))(element.get("name"))
-            node.addTo(parent)
+            parent.append(node)
 
         if (element.tag.startswith("st_") and action=="end"):
             try:
@@ -43,10 +43,10 @@ def manifestFromXML(xml_file):
             me = parent.pop() 
             mum = parent.pop()
             me.addTo(mum)
-            mum.addTo(parent)
+            parent.append(mum)
             element.clear()
     
-    return Manifest(parent.pop().children[0])
+    return Manifest(parent.pop()._children[0])
 
 def searchFiles(root, subpath, datastore, name, unionfs=None):
     
@@ -146,8 +146,9 @@ class Node(object):
             #inode is dynamic
             if (key == 'inode') : continue
 
-            #children may differ in order
-            if (key == 'children') : continue
+            #children and whiteouts may differ in order
+            if (key == '_children') : continue
+            if (key == '_whiteouts') : continue
 
             #time may differ slightly
             if (key.endswith('time')) : continue
@@ -162,9 +163,13 @@ class Node(object):
     def __iter__(self):
         yield self
 
+    def __hash__(self):
+        """because the merger needs set support"""
+        return self.name.__hash__()
+
     def addTo(self, directory):
         assert isinstance(directory, Directory)
-        directory.__children.append(self)
+        directory._children.append(self)
 
     def copy(self):
         retval = self.__new__(type(self), self.name)
@@ -209,27 +214,28 @@ class FIFO(Node):
 
 class Directory(Node):
 
-    __slots__ = Node.__slots__ + [ '__children', '__whiteouts' ]
+    __slots__ = Node.__slots__ + [ '_children','_whiteouts' ]
     
     def __init__(self, name, stats=None):
         Node.__init__(self,name, stats)
-        self.__children = list()
-        self.__whiteouts = list()
+        self._children = list()
+        self._whiteouts = list()
           
     def toXML(self):
         xml = super(Directory,self).toXML()
-        for child in self.__children:
+        for child in self._children:
             xml.append(child.toXML())
         return xml
 
     def copy(self):
         retval = super(Directory,self).copy()
-        retval.__children = list()
+        retval._children = list()
+        retval._whiteouts = list()
         return retval
 
     def __iter__(self):
         yield self
-        for child in self.__children:
+        for child in self._children:
             for retval in child:
                 yield retval
 
@@ -237,24 +243,24 @@ class Directory(Node):
         if (not super(Directory,self).__eq__(node)):
             return False
         else:
-            if not (len(node.__children) == len(self.__children)):
+            if not (len(node._children) == len(self._children)):
                 return False
 
-            for child in self.__children:
-                if not child in node.__children:
+            for child in self._children:
+                if not child in node._children:
                     return False
             
             return True
 
     def __str__(self):
         retval = self.name
-        for child in self.__children:
+        for child in self._children:
             for string in str(child).splitlines():
                 retval += '\n'
                 retval += self.name + '/' + string
         return retval
 
-    children_as_dict = property(lambda self: dict( (child.name, child) for child in self.__children ))
+    children_as_dict = property(lambda self: dict( (child.name, child) for child in self._children ))
 
 class File(Node):
 
@@ -273,11 +279,11 @@ class File(Node):
 class DeleteNode(object):
 
     __slots__ = [
-        '__name'
+        '_name'
     ]
 
     def __init__(self, name):
-        self.__name = name
+        self._name = name
 
     def toXML(self):
         xml = etree.Element("file")
@@ -290,10 +296,19 @@ class DeleteNode(object):
 
     def addTo(self, directory):
         assert isinstance(directory, Directory)
-        directory.__whiteouts.append(self)
+        directory._whiteouts.append(self)
 
     def __eq__(self, node):
-        return isinstance(node ,DeleteNode) and (self.__name == node.__name)
+        return isinstance(node ,DeleteNode) and (self._name == node._name)
 
-    name = property(lambda self: "delnode:" + self.__name)
+    name = property(lambda self: "delnode:" + self._name)
+
+    def __hash__(self):
+        """because the merger needs set support"""
+        return self._name.__hash__()
+        
+        
+
+    def __str__(self):
+        return "DeleteNode ({0})".format(self._name)
 

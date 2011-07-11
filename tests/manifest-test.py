@@ -27,7 +27,7 @@ class TestManifest(unittest.TestCase):
 
         manifest = mfs.manifest.manifestFromPath('testdir')
         childdict = dict()
-        for child in manifest.root.children:
+        for child in manifest.root._children:
             childdict[child.name] = child
         self.assertTrue(stat.S_ISREG(childdict['testfile_a'].st_mode))
         self.assertTrue(stat.S_ISDIR(childdict['testdir'].st_mode))
@@ -35,19 +35,13 @@ class TestManifest(unittest.TestCase):
         self.assertEquals(os.stat('testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].st_rdev)
 
         self.assertFalse('.unionfs' in childdict)
+        self.assertEquals(manifest.root._whiteouts[0].name, 'delnode:testfile_a')
+        self.assertEquals(childdict['testdir']._whiteouts[0].name, 'delnode:another_file')
         
-        has_wh_del_node = False
-        has_unionfs_del_node = False
-        for child in manifest.root:
-            if isinstance(child, DeleteNode):
-                if child.name == 'testfile_a':
-                    has_wh_del_node = True
-                if child.name == 'another_file':
-                    has_unionfs_del_node = True
 
-        self.assertTrue(has_wh_del_node)
-        self.assertTrue(has_unionfs_del_node)
-        
+    def testDelNode(self):
+        self.assertEquals(DeleteNode("test123"), DeleteNode("test123"))
+    
 
     def testToXML(self):
         datastore = mfs.datastore.Datastore('datastore')
@@ -56,7 +50,7 @@ class TestManifest(unittest.TestCase):
         manifest_new = mfs.manifest.manifestFromXML(StringIO(xml))
         self.assertEquals(manifest_orig, manifest_new)
 
-        for child in manifest_new.root.children:
+        for child in manifest_new.root._children:
             if child.name == "testfile_a":
                 child.name = "kartoffelbrei"
         self.assertNotEquals(manifest_orig, manifest_new)
@@ -66,22 +60,22 @@ class TestManifest(unittest.TestCase):
         
         node = File("file_a")
         node.hash = "asdf1234"
-        root.children.append(node)
+        node.addTo(root)
 
         node = File("file_b")
         node.hash = "asdf5678"
-        root.children.append(node)
+        node.addTo(root)
 
         dirnode = Directory("dir")
-        root.children.append(dirnode)
+        dirnode.addTo(root)
 
         node = File('subfile_a')
         node.hash = "fda1234"
-        dirnode.children.append(node)
+        node.addTo(dirnode)
 
         node = File('subfile_b')
         node.hash = "fda1234"
-        dirnode.children.append(node)
+        node.addTo(dirnode)
 
         manifest = Manifest(root)
 

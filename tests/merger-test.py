@@ -2,22 +2,22 @@
 
 import unittest
 
-from mfs.manifest import Directory, File, Manifest
+from mfs.manifest import Directory, File, Manifest, DeleteNode
 from mfs.manifest_merge import merge
 
 
 class MergerTest(unittest.TestCase):
     def setUp(self):
         root = Directory("orig")
-        root.children.append(File('testfile_a'))
-        root.children.append(File('testfile_b'))
+        File('testfile_a').addTo(root)
+        File('testfile_b').addTo(root)
 
         testdir = Directory('testdir')
-        root.children.append(testdir)
+        testdir.addTo(root)
         another_dir = Directory('another_dir')
-        testdir.children.append(another_dir)
-        another_dir.children.append(File("deep_file"))
-        root.children.append(Directory('second_testdir'))
+        another_dir.addTo(testdir)
+        File('deep_file').addTo(another_dir)
+        Directory('second_testdir').addTo(root)
 
         self.orig = Manifest(root)
 
@@ -46,8 +46,8 @@ class MergerTest(unittest.TestCase):
         newroot = Directory("orig")
         testdir = Directory('testdir')
 
-        newroot.children.append(testdir)
-        testdir.children.append(File('new_file'))
+        testdir.addTo(newroot)
+        File('new_file').addTo(testdir)
         new = Manifest(newroot)
         target = merge(self.orig, new)
         self.assertEquals(
@@ -55,61 +55,18 @@ class MergerTest(unittest.TestCase):
             target.root.children_as_dict['testdir'].children_as_dict['new_file'])
         self.assertTrue('another_dir' in target.root.children_as_dict['testdir'].children_as_dict)
 
-    def testUnionfs(self):
-        """test merge of unionfs folders"""  
-        target = merge(self.orig, self.orig)
-        self.assertFalse('testfile_a' not in target.root.children_as_dict)
-        self.assertFalse('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
+    def testWhiteouts(self):
+        """test merge of manifests containing whiteouts"""
+        newroot = Directory('testdir')
+        DeleteNode("testfile_a").addTo(newroot)
+        DeleteNode("testfile_b").addTo(newroot)
+        DeleteNode("testfile_a").addTo(self.orig.root)
 
+        target = merge(self.orig, Manifest(newroot))
 
-        newroot = Directory("orig")
-        unionfsdir = Directory('.unionfs')
-        newroot.children.append(unionfsdir)
-
-        unionfsdir.children.append(File('testfile_a_HIDDEN~'))
-
-        testdir = Directory('testdir')
-        unionfsdir.children.append(testdir)
-
-        another_dir = Directory('another_dir')
-        testdir.children.append(another_dir)
-        
-        another_dir.children.append(File('deep_file_HIDDEN~'))
-
-        
-        new = Manifest(newroot)
-        target = merge(self.orig, new)
-        self.assertTrue('.unionfs' not in target.root.children_as_dict)
-        self.assertTrue('testfile_a' not in target.root.children_as_dict)
-        self.assertTrue('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
-
-    def testAUFS(self):
-        """test merge of aufs folders"""
-
-        #TODO test for deleted file hidden in subfolder
-
-        target = merge(self.orig, self.orig)
-        
-        self.assertFalse('testfile_a' not in target.root.children_as_dict)
-        self.assertFalse('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
-
-        newroot = Directory("orig")
-        newroot.children.append(File('.wh.testfile_a'))
-
-        testdir = Directory('testdir')
-        newroot.children.append(testdir)
-
-        another_dir = Directory('another_dir')
-        testdir.children.append(another_dir)
-
-        another_dir.children.append(File('.wh.deep_file'))
-
-        new = Manifest(newroot)
-        target = merge(self.orig, new)
-
-        self.assertTrue('testfile_a' not in target.root.children_as_dict)
-        self.assertTrue('deep_file' not in target.root.children_as_dict['testdir'].children_as_dict['another_dir'].children_as_dict)
-
+        self.assertEquals(2, len(target.root._whiteouts))
+        self.assertEquals("delnode:testfile_a", target.root._whiteouts[0].name)
+        self.assertEquals("delnode:testfile_b", target.root._whiteouts[1].name)
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,41 +3,33 @@ from threading import Thread
 
 import time
 
-def merge_children(orig, new):
-    regnodes = set()
-    delnodes = set()
-    for child in orig.children + new.children:
-        if isinstance(child, DeleteNode):
-            delnodes.add(child)
-        else:
-            regnodes.add(child.name)
+def merge_children(target, orig, new):
+    regnodes = set(orig._children + new._children)
 
     odict = orig.children_as_dict
     ndict = new.children_as_dict
+
  
-
-    retval = list()
-
-    for filename in filenames:
+    for filename in [ child.name for child in regnodes]:
         if (filename in ndict):
             newchild = ndict[filename].copy()
         else:
             newchild = odict[filename].copy()
 
         if isinstance(newchild, Directory):
-            newchild.children = merge_children(
+            merge_children(
+                newchild,
                 odict.get(newchild.name, Directory("")),
                 ndict.get(newchild.name, Directory(""))
             )
-        retval.append(newchild)
-        
+        target._children.append(newchild)
+    
+    target._whiteouts = list( set(orig._whiteouts) | set(new._whiteouts) ) 
 
-    return retval + list(delnodes)
-        
 
 def merge(orig, new):
     target = new.root.copy()
-    target.children = merge_children(orig.root, new.root)
+    merge_children(target, orig.root, new.root)
 
     return Manifest(target)
 
