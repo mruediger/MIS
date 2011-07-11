@@ -165,7 +165,6 @@ class Node(object):
     def addTo(self, directory):
         assert isinstance(directory, Directory)
         directory.__children.append(self)
-        
 
     def copy(self):
         retval = self.__new__(type(self), self.name)
@@ -210,11 +209,12 @@ class FIFO(Node):
 
 class Directory(Node):
 
-    __slots__ = Node.__slots__ + [ '__children' ]
+    __slots__ = Node.__slots__ + [ '__children', '__whiteouts' ]
     
     def __init__(self, name, stats=None):
         Node.__init__(self,name, stats)
         self.__children = list()
+        self.__whiteouts = list()
           
     def toXML(self):
         xml = super(Directory,self).toXML()
@@ -287,6 +287,10 @@ class DeleteNode(object):
 
     def __iter__(self):
         yield self
+
+    def addTo(self, directory):
+        assert isinstance(directory, Directory)
+        directory.__whiteouts.append(self)
 
     def __eq__(self, node):
         return isinstance(node ,DeleteNode) and (self.__name == node.__name)
