@@ -3,6 +3,7 @@ import os
 
 from lxml import etree
 from collections import deque
+from mfs.exporter import *
 
 def manifestFromPath(path, datastore=None):
     if (os.path.exists(path + '/.unionfs')):
@@ -20,6 +21,7 @@ def manifestFromXML(xml_file):
     for action, element in etree.iterparse(xml_file, events=("start","end")):
         if (element.tag == "file" and action=="start"):
             node = eval(element.get("type"))(element.get("name"))
+            node.whiteout = (element.get("whiteout") == "True")
             parent.append(node)
 
         if (element.tag.startswith("st_") and action=="end"):
@@ -37,6 +39,9 @@ def manifestFromXML(xml_file):
 
         if (element.tag == "target" and action=="end"):
             parent[len(parent) - 1].target = element.text
+
+        if (element.tag == "whiteout" and action == "end"):
+            parent[len(parent) - 1].whiteout = bool(element.text)
             
         #because root will get removed to, we need a dummy
         if (element.tag == "file" and action=="end"):
@@ -62,11 +67,8 @@ def searchFiles(root, subpath, datastore, name, unionfs=None):
         return node
 
     if stat.S_ISREG(stats.st_mode):
-        if unionfs and os.path.exists(unionfs + subpath):
-            return DeleteNode(name)
-
-        if name.startswith(".wh."):
-            return DeleteNode(name[4:])
+        #if name.startswith(".wh."):
+        #    return DeleteNode(name[4:])
         
         node = File(name, stats)
         node.orig_inode = stats.st_ino
@@ -77,10 +79,19 @@ def searchFiles(root, subpath, datastore, name, unionfs=None):
     if stat.S_ISDIR(stats.st_mode):
         node = Directory(name, stats)
         for childname in os.listdir(path):
-            childpath = subpath + '/' + childname
             if (childname == '.unionfs'): continue
+            if (childname.startswith(".wh.")): continue
 
+            childpath = subpath + '/' + childname
             child = searchFiles(root, childpath, datastore, childname, unionfs)
+
+            #FIXME testen wie unionfs mit verzeichnissen umgeht
+            if (unionfs and os.path.exists(unionfs + childpath) and not os.path.isdir(unionfs + childpath)):
+                child.whiteout = True
+            
+            if (os.path.exists(root + subpath + '/' + '.wh.' + childname)):
+                child.whiteout = True
+
             child.addTo(node)
 
         return node
@@ -103,6 +114,16 @@ class Manifest(object):
         tree = etree.ElementTree(self.root.toXML())
         return tree
 
+    def export(self, target, datastore, whiteouts=None):
+        assert(os.path.isdir(target))
+        if whiteouts == "unionfs":
+            exporter = UnionFSExporter(target)
+        elif whiteouts == "aufs":
+            exporter = AUFSExporter(target)
+        else:
+            exporter = Exporter(target)
+        self.root.export(datastore, exporter)
+
     def __eq__(self, manifest):
         return self.root == manifest.root
 
@@ -124,12 +145,14 @@ class Node(object):
         'st_mtime',
         'st_ctime',
         'st_mode',
-        'st_nlink', ]
+        'st_nlink', 
+        'whiteout' ]
 
     def __init__(self, name, stats=None):
         if (name is None):
             raise ValueError
         self.name = name
+        self.whiteout = False
 
         if stats is not None:
             for key in [key for key in self.__slots__ if key.startswith("st_")]:
@@ -148,7 +171,6 @@ class Node(object):
 
             #children and whiteouts may differ in order
             if (key == '_children') : continue
-            if (key == '_whiteouts') : continue
 
             #time may differ slightly
             if (key.endswith('time')) : continue
@@ -167,6 +189,9 @@ class Node(object):
         """because the merger needs set support"""
         return self.name.__hash__()
 
+    def export(self, datastore, exporter):
+        raise Exception("Node Objects cannot be exported")
+
     def addTo(self, directory):
         assert isinstance(directory, Directory)
         directory._children.append(self)
@@ -182,6 +207,7 @@ class Node(object):
         xml = etree.Element("file")
         xml.attrib["name"] = self.name
         xml.attrib["type"] = type(self).__name__
+        xml.attrib["whiteout"] = str(self.whiteout)
 
         for key in filter(lambda x: x.startswith("st_"), self.__slots__):
             if not hasattr(self,key): continue
@@ -192,6 +218,12 @@ class Node(object):
 
     #only defined for special files
     st_rdev = property(lambda self: 0)
+
+    def apply_stats(self, path):
+        os.chown(path, self.st_uid, self.st_gid)        #TODO security
+        os.utime(path, (self.st_atime, self.st_mtime))
+        os.chmod(path, self.st_mode)                    #TODO security
+
 
 class SymbolicLink(Node):
 
@@ -204,22 +236,48 @@ class SymbolicLink(Node):
            element.text = self.target
         return xml
 
+    def export(self, datastore, exporter):
+        try:
+            os.symlink(self.target, exporter.getPath(self))
+            self.apply_stats(exporter.getPath(self))
+        except OSError as (errno, strerror):
+            print "symlink: {0}: {1}".format(exporter.getPath(self), strerror)
+            return
+
+
 class Device(Node):
 
     #the rest is handled automaticly by setStat
     __slots__ = Node.__slots__ + ['st_rdev']
+    
+    def export(self, datastore, exporter):
+        try:
+            os.mknod(exporter.getPath(self), self.st_mode, os.makedev(
+                os.major(self.st_rdev),
+                os.minor(self.st_rdev)
+            ))
+            self.apply_stats(exporter.getPath(self))
+        except OSError as (errno, strerror):
+            print "mknod: {0}: {1}".format(exporter.getPath(self), strerror)
+            return
 
 class FIFO(Node):
-    pass
+
+    def export(self, datastore, exporter):
+        try:
+            os.mkfifo(exporter.getPath(self))
+            self.apply_stats(exporter.getPath(self))
+        except OSError as (errno, strerror):
+            print "mkfifo: {0}: {1}".format(exporter.getPath(self), strerror)
+            return
 
 class Directory(Node):
 
-    __slots__ = Node.__slots__ + [ '_children','_whiteouts' ]
+    __slots__ = Node.__slots__ + [ '_children' ]
     
     def __init__(self, name, stats=None):
         Node.__init__(self,name, stats)
         self._children = list()
-        self._whiteouts = list()
           
     def toXML(self):
         xml = super(Directory,self).toXML()
@@ -230,8 +288,28 @@ class Directory(Node):
     def copy(self):
         retval = super(Directory,self).copy()
         retval._children = list()
-        retval._whiteouts = list()
         return retval
+
+    def export(self, datastore, exporter):
+        try:
+            os.mkdir(exporter.getPath(self))
+            self.apply_stats(exporter.getPath(self))
+        except OSError as (errno, strerror):
+            print "mkdir {0}: {1}".format(exporter.getPath(self), strerror)
+
+        
+        
+        olddir = exporter.directory
+        exporter.directory = self.name
+
+        for child in self._children:
+            if (child.whiteout):
+                exporter.handleWhiteout(child)
+            else:
+                child.export(datastore, exporter)
+
+        exporter.directory = olddir #FIXME
+
 
     def __iter__(self):
         yield self
@@ -276,38 +354,22 @@ class File(Node):
             element.text = str(self.hash)
         return xml
 
-class DeleteNode(object):
+    def export(self, datastore, exporter):
+        if (self.st_nlink > 1):
+            if (self.orig_inode in exporter.linkcache):
+                os.link(exporter.linkcache[self.orig_inode], exporter.getPath(self))
+                return
+            else:
+                exporter.linkcache[node.orig_inode] = exporter.getPath(self)
 
-    __slots__ = [
-        '_name'
-    ]
+        source = datastore.getData(self)
+        dest = file(exporter.getPath(self), 'w')
+            
+        buf = source.read(1024)
+        while len(buf):
+            buf = source.read(1024)
+            dest.write(buf)
 
-    def __init__(self, name):
-        self._name = name
-
-    def toXML(self):
-        xml = etree.Element("file")
-        xml.attrib["name"] = self.__name
-        xml.attrib["type"] = type(self).__name__
-        return xml
-
-    def __iter__(self):
-        yield self
-
-    def addTo(self, directory):
-        assert isinstance(directory, Directory)
-        directory._whiteouts.append(self)
-
-    def __eq__(self, node):
-        return isinstance(node ,DeleteNode) and (self._name == node._name)
-
-    def __hash__(self):
-        """because the merger needs set support"""
-        return self._name.__hash__()
-        
-    def __str__(self):
-        return "DeleteNode ({0})".format(self._name)
-
-    name = property(lambda self: "delnode:" + self._name)
-    aufsname = property(lambda self: ".wh." + self._name)
-    unionfsname = property(lambda self: self._name)
+        source.close()
+        dest.close()
+        self.apply_stats(exporter.getPath(self))

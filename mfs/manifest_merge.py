@@ -1,4 +1,4 @@
-from mfs.manifest import Directory, Manifest, DeleteNode
+from mfs.manifest import Directory, Manifest
 from threading import Thread
 
 import time
@@ -23,13 +23,9 @@ def merge_children(target, orig, new):
                 ndict.get(newchild.name, Directory(""))
             )
         target._children.append(newchild)
-    
-    target._whiteouts = list( set(orig._whiteouts) | set(new._whiteouts) ) 
-
 
 def merge(orig, new):
     target = new.root.copy()
     merge_children(target, orig.root, new.root)
-
     return Manifest(target)
 

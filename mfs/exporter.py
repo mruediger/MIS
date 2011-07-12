@@ -3,65 +3,27 @@ import mfs.manifest
 
 class Exporter(object):
 
-    def __init__(self):
+    def __init__(self, target):
+        self._target = target
         self.linkcache = dict()
+        self.directory = ""
 
-    def export(self, node, target, datastore = None):
-        #sanity checks:
-        assert(os.path.isdir(target))
+    def getPath(self, node):
+        return self._target + '/' + self.directory + '/' + node.name
 
-        path = target + '/' + node.name
+    def handleWhiteout(self, node):
+        pass
 
-        if isinstance(node, mfs.manifest.SymbolicLink):
-            try:
-                os.symlink(node.target, path)
-            except OSError as (errno, strerror):
-                print "symlink: {0}: {1}".format(path, strerror)
-            return
+class UnionFSExporter(Exporter):
 
-        if isinstance(node, mfs.manifest.Device):
-            try:
-                os.mknod(path, node.st_mode, os.makedev(
-                    os.major(node.st_rdev),
-                    os.minor(node.st_rdev)
-                ))
-            except OSError as (errno, strerror):
-                print "mknod {0}: {1}".format(path, strerror)
-                return
+    def handleWhiteout(self, node):
+        parent = self._target + "/.unionfs/" + self.directory
+        if not os.path.exists(parent):
+            os.makedirs(parent)
+        open(parent + '/' + node.name, 'a').close()
 
-        if isinstance(node, mfs.manifest.FIFO):
-            os.mkfifo(path)
 
-        if isinstance(node, mfs.manifest.Directory):
-            try:
-                os.mkdir(path)
-            except OSError as (errno, strerror):
-                print "mkdir {0}: {1}".format(path, strerror)
+class AUFSExporter(Exporter):
 
-            for child in node.children:
-                self.export(child, path, datastore)
-
-        if isinstance(node, mfs.manifest.File):
-            if (node.st_nlink > 1):
-                if (node.orig_inode in self.linkcache):
-                    os.link(self.linkcache[node.orig_inode], path)
-                    return
-                else:
-                    self.linkcache[node.orig_inode] = path
-
-            source = datastore.getData(node)
-            dest = file(path, 'w')
-            
-            buf = source.read(1024)
-            while len(buf):
-                buf = source.read(1024)
-                dest.write(buf)
-
-            source.close()
-            dest.close()
-
-        
-        os.chown(path, node.st_uid, node.st_gid)        #TODO security
-        os.utime(path, (node.st_atime, node.st_mtime))
-        os.chmod(path, node.st_mode)                    #TODO security
-
+    def handleWhiteout(self, node):
+        open(self._target + '/' + self.directory + '/.wh.' + node.name, 'a').close()

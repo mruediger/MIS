@@ -8,7 +8,7 @@ import stat
 from StringIO import StringIO
 from lxml import etree
 
-from mfs.manifest import Directory,File,DeleteNode,Manifest
+from mfs.manifest import Directory,File,Manifest
 
 class TestManifest(unittest.TestCase):
 
@@ -35,21 +35,23 @@ class TestManifest(unittest.TestCase):
         self.assertEquals(os.stat('testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].st_rdev)
 
         self.assertFalse('.unionfs' in childdict)
-        self.assertEquals(manifest.root._whiteouts[0].name, 'delnode:testfile_a')
-        self.assertEquals(childdict['testdir']._whiteouts[0].name, 'delnode:another_file')
-        
 
-    def testDelNode(self):
-        self.assertEquals(DeleteNode("test123"), DeleteNode("test123"))
-        self.assertEquals(".wh.testnode", DeleteNode("testnode").aufsname)
-        self.assertEquals("testnode", DeleteNode("testnode").unionfsname)
-    
+        whiteouts = list()
+        for child in manifest.root:
+            if (child.whiteout):
+                whiteouts.append(child.name)
+
+        self.assertTrue(len(whiteouts) == 2)
+        print whiteouts
+        self.assertTrue("testfile_a" in whiteouts)
+        self.assertTrue("another_file" in whiteouts)
 
     def testToXML(self):
         datastore = mfs.datastore.Datastore('datastore')
         manifest_orig = mfs.manifest.manifestFromPath('testdir', datastore)
-        xml = etree.tostring(manifest_orig.toXML())
+        xml = etree.tostring(manifest_orig.toXML(), pretty_print=True)
         manifest_new = mfs.manifest.manifestFromXML(StringIO(xml))
+
         self.assertEquals(manifest_orig, manifest_new)
 
         for child in manifest_new.root._children:
