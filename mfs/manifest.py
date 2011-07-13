@@ -311,11 +311,17 @@ class Directory(Node):
         if (not super(Directory,self).__eq__(node)):
             return False
         else:
-            if not (len(node._children) == len(self._children)):
+            if not (len(self._children) == len(node._children)):
                 return False
+
+            if not (len(self._whiteouts) == len(node._whiteouts)):
+                return False
+
+            ochildren = sorted(self._children, key=lambda child: child.name)
+            nchildren = sorted(node._children, key=lambda child: child.name)
             
             for n in range(0, len(self._children)):
-                if not self._children[n] == node._children[n]:
+                if not ochildren[n] == nchildren[n]:
                     return False
 
             return True

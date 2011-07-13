@@ -65,8 +65,8 @@ class MergerTest(unittest.TestCase):
         target = merge(self.orig, Manifest(newroot))
 
         self.assertEquals(2, len(target.root._whiteouts))
-        self.assertEquals("delnode:testfile_a", target.root._whiteouts[0].name)
-        self.assertEquals("delnode:testfile_b", target.root._whiteouts[1].name)
+        self.assertEquals("testfile_a", target.root._whiteouts[0].name)
+        self.assertEquals("testfile_b", target.root._whiteouts[1].name)
 
 if __name__ == '__main__':
     unittest.main()
