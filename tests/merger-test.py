@@ -68,5 +68,11 @@ class MergerTest(unittest.TestCase):
         self.assertEquals("testfile_a", target.root._whiteouts[0].name)
         self.assertEquals("testfile_b", target.root._whiteouts[1].name)
 
+        self.assertTrue( any ( [ child.name == 'testfile_a' for child in target.root._children ] ) )
+        
+        target = merge(self.orig, Manifest(newroot), handle_whiteouts = True)
+
+        self.assertFalse( any ( [ child.name == 'testfile_a' for child in target.root._children ] ) )
+
 if __name__ == '__main__':
     unittest.main()
