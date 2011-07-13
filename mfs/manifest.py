@@ -290,16 +290,13 @@ class Directory(Node):
         except OSError as (errno, strerror):
             print "mkdir {0}: {1}".format(exporter.getPath(self), strerror)
 
-        
-        
         olddir = exporter.directory
         exporter.directory = self.name
 
-        for child in self._children:
+        for child in ( self._children + self._whiteouts ):
             child.export(datastore, exporter)
 
         exporter.directory = olddir #FIXME
-
 
     def __iter__(self):
         yield self
@@ -407,7 +404,4 @@ class DeleteNode(object):
         self.name = name
 
     def export(self, datastore, exporter):
-        pass
-        #dateien auf die sich die Whiteouts beziehen
-        #befinden sich nicht im Manifest
-        #dies wird von merge sichergestellt
+        exporter.handleWhiteout(self) 

@@ -170,19 +170,16 @@ class TestExport(unittest.TestCase):
             testfile.addTo(directory)
             testfile.hash = node.hash
             if (n == 2 or n == 4):
-                testfile.whiteout = True
+                DeleteNode("file" + str(n)).addTo(directory)
 
         manifest = Manifest(directory)
         manifest.export(self.tmpdir, datastore)      
 
         for n in range(0,10):
-            if (n == 2 or n == 4):
-                self.assertFalse(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
-            else:
-                self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
-                self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_ATIME])
-                self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MTIME])
-                self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MODE])
+            self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
+            self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_ATIME])
+            self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MTIME])
+            self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MODE])
 
         shutil.rmtree(self.tmpdir)
         self.tmpdir = tempfile.mkdtemp()
@@ -191,11 +188,10 @@ class TestExport(unittest.TestCase):
         for n in range(0,10):
             if (n == 2 or n == 4):
                 self.assertTrue(os.path.exists(self.tmpdir + '/' + '.unionfs/testdir_with_whiteouts/file' + str(n)))
-            else:
-                self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
-                self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_ATIME])
-                self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MTIME])
-                self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MODE])
+            self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
+            self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_ATIME])
+            self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MTIME])
+            self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MODE])
 
         shutil.rmtree(self.tmpdir)
         self.tmpdir = tempfile.mkdtemp()
@@ -204,11 +200,10 @@ class TestExport(unittest.TestCase):
         for n in range(0,10):
             if (n == 2 or n == 4):
                 self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/.wh.file' + str(n)))
-            else:
-                self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
-                self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_ATIME])
-                self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MTIME])
-                self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MODE])
+            self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
+            self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_ATIME])
+            self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MTIME])
+            self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MODE])
 
 if __name__ == '__main__':
     unittest.main()
