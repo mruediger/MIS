@@ -3,12 +3,14 @@ from threading import Thread
 
 import time
 
+#TODO map, filter, reduce benutzen
+
+
 def merge_children(target, orig, new):
     regnodes = set(orig._children + new._children)
 
     odict = orig.children_as_dict
     ndict = new.children_as_dict
-
  
     for filename in [ child.name for child in regnodes]:
         if (filename in ndict):
@@ -25,6 +27,8 @@ def merge_children(target, orig, new):
         target._children.append(newchild)
 
 def merge(orig, new):
+    #TODO whiteout handling:
+    # - whiteouts koennen optional dateien entfernen
     target = new.root.copy()
     merge_children(target, orig.root, new.root)
     return Manifest(target)

@@ -34,17 +34,8 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(stat.S_ISCHR(childdict['mixer-testdev'].st_mode))
         self.assertEquals(os.stat('testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].st_rdev)
 
-        self.assertFalse('.unionfs' in childdict)
-
-        whiteouts = list()
-        for child in manifest.root:
-            if (child.whiteout):
-                whiteouts.append(child.name)
-
-        self.assertTrue(len(whiteouts) == 2)
-        print whiteouts
-        self.assertTrue("testfile_a" in whiteouts)
-        self.assertTrue("another_file" in whiteouts)
+        self.assertEquals('testfile_a', manifest.root._whiteouts[0].name)
+        self.assertEquals('another_file', childdict['testdir']._whiteouts[0].name)
 
     def testToXML(self):
         datastore = mfs.datastore.Datastore('datastore')
