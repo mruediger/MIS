@@ -3,7 +3,8 @@
 import sys,os
 import mfs
 
-def export(argv):
+def export_files(argv):
+    """creates all files form the manifest in the provided directory"""
     try:
         manifest_file  = argv[0]
         datastore_path = argv[1]
@@ -18,7 +19,6 @@ def export(argv):
             return
 
     datastore = mfs.datastore.Datastore(datastore_path)
-
     manifest = mfs.manifest.manifestFromXML(manifest_file)
 
     from mfs.exporter import Exporter
@@ -26,32 +26,45 @@ def export(argv):
 
     for child in manifest.root.children:
         exporter.export(child, destination_path, datastore)
-    
-def create(argv):
+
+def import_files(argv):
+    '''traveres through given path and creates a manifest'''
     try:
-        source_path  = argv[0]
-        datastore_path = argv[1]
+        path  = argv[0]
     except IndexError:
-        print "usage: {0} create PATH DATASTORE".format(sys.argv[0])
+        print "usage: {0} create PATH".format(sys.argv[0])
         return
 
-    manifest = mfs.manifestFromPath(
-        source_path,
-        mfs.datastore.Datastore(datastore))
-
+    manifest = mfs.manifestFromPath(path)
     print etree.tostring(manifest.toXML(), pretty_print=True)
 
+def datastore_cleanup(argv):
+    """removes all files that are not in the manifest files provied as an argument"""
+    pass
+
+def datastore_store(argv):
+    """stores all files specified in the manifest in the provided datastore location"""
+    pass
+
+
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(
-        description="MFS Client"
-    )
-    parser.add_argument('ACTION', type=str, help="action to take", choices=["export", "merge", "mount"]
-    )
-    parser.add_argument('OPTION', type=str, nargs="*")
-    args = parser.parse_args()
     
-    if (args.ACTION == "export"):
-        export(args.OPTION)
+    help_message = """usage: {0} <command> [<args>]""".format(sys.argv[0])
+    help_message += """\navailable commands are:"""
+    help_message += """\n   import : create a manifest from a directory"""
+    help_message += """\n   export : store contents of a manifest to a directory"""
+    help_message += """\n   store  : store files to datastore"""
+    help_message += """\n   clean  : remove unneded files form datastore"""
+
+    try:
+        action = sys.argv[1]
+    except IndexError:
+        print help_message
+        print sys.argv[0] + " too few arguments"
+        sys.exit(1)
+    
+    if (action == "export"):
+        export_files(sys.argv[2:])
     else:
-        parser.print_help()
+        pass
+
