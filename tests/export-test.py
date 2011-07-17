@@ -94,6 +94,9 @@ class TestExport(unittest.TestCase):
         self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'file')[ST_MODE])
 
     def testExportDevice(self):
+        # this test is only possible with super user rights
+        if (os.environ['USER'] != 'root'):
+            return
         testdev = Device("mixer")
         testdev.st_uid = 1000
         testdev.st_gid = 1000
