@@ -6,7 +6,7 @@ import os
 import shutil
 
 from mfs.datastore import Datastore
-from mfs.manifest  import File
+from mfs.manifest.nodes  import File
 
 class DatastoreTest(unittest.TestCase):
 
@@ -40,9 +40,3 @@ class DatastoreTest(unittest.TestCase):
 
         os.remove(tmpfile)
         shutil.rmtree(tmpdir)
-
-
-
-
-unittest.main()
-

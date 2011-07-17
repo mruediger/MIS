@@ -2,8 +2,8 @@
 
 import unittest
 
-from mfs.manifest import Directory, File, Manifest, DeleteNode
-from mfs.manifest_merge import merge
+from mfs.manifest.nodes import Directory, File, Manifest, DeleteNode
+from mfs.manifest.merge import merge
 
 
 class MergerTest(unittest.TestCase):
