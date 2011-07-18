@@ -9,6 +9,7 @@ __author__ = 'Mathias Ruediger <ruediger@blueboot.org>'
 
 import os
 import stat
+import hashlib
 
 from mfs.manifest.nodes import *
 
@@ -86,6 +87,16 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         node = File(name, stats)
         #FIXME into constructor
         node.orig_inode = stats.st_ino
+        hl = hashlib.sha256()
+        fobj = open(path, 'r')
+        while True:
+            data = fobj.read(1024 * 1024)
+            if not data: break
+            hl.update(data)
+
+        node.hash = hl.hexdigest()
+
+
         if (datastore is not None):
             datastore.saveData(node, path)
         return node

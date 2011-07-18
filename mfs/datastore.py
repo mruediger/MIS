@@ -16,14 +16,16 @@ class Datastore(object):
             raise ValueError("file does not exist")
 
         fobj = open(path, 'r')
-        hl = hashlib.sha1()
-        
-        while True:
-            data = fobj.read(1024 * 1024)
-            if not data: break
-            hl.update(data)
 
-        node.hash = hl.hexdigest()
+        if not node.hash:
+            hl = hashlib.sha256()
+        
+            while True:
+                data = fobj.read(1024 * 1024)
+                if not data: break
+                hl.update(data)
+
+            node.hash = hl.hexdigest()
         self.store.saveData(node, fobj)
 
     def getPath(self, node):
