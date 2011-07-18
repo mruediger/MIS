@@ -10,12 +10,6 @@ from mfs.manifest.nodes  import File
 
 class DatastoreTest(unittest.TestCase):
 
-    def testCreation(self):
-        try:
-            datastore = Datastore()
-        except ValueError as error:
-            print error
-
     def testSaveDataWithMemStore(self):
         (num, tmpfile) = tempfile.mkstemp()
         node = File(tmpfile)

@@ -17,6 +17,7 @@ class TestExport(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
     
     def tearDown(self):
+        return
         shutil.rmtree(self.tmpdir)
     
     def testExportDirectory(self):
@@ -59,6 +60,24 @@ class TestExport(unittest.TestCase):
             testfile.addTo(directory)
             testfile.hash = node.hash
 
+        subdir = Directory('subdir')
+        subdir.st_uid = 1000
+        subdir.st_gid = 1000
+        subdir.addTo(directory)
+        subdir.st_atime = 1234567
+        subdir.st_mtime = 7654321
+        subdir.st_mode  = 16866
+
+        subfile = File('file')
+        subfile.st_uid = 1000
+        subfile.st_gid = 1000
+        subfile.addTo(subdir)
+        subfile.st_atime = 1234567
+        subfile.st_mtime = 7654321
+        subfile.st_mode  = 33188
+        subfile.st_nlink = 1
+        subfile.hash = node.hash
+
         manifest = Manifest(directory)
         manifest.export(self.tmpdir, datastore)      
 
@@ -67,6 +86,8 @@ class TestExport(unittest.TestCase):
             self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_content/file' + str(n))[ST_ATIME])
             self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_content/file' + str(n))[ST_MTIME])
             self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_content/file' + str(n))[ST_MODE])
+
+        self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_content/subdir/file'))
 
     def testExportFile(self):
         testfile = File("file")
@@ -160,7 +181,10 @@ class TestExport(unittest.TestCase):
         file(tmpfile, 'w').write("testcontent")
         datastore = Datastore()
         datastore.saveData(node, tmpfile)
-        os.remove(tmpfile)
+
+        print tmpfile
+
+        #os.remove(tmpfile)
  
         for n in range(0,10):
             testfile = File("file" + str(n))

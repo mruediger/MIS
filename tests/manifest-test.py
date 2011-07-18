@@ -28,7 +28,6 @@ class TestManifest(unittest.TestCase):
         manifest = mfs.manifest.serializer.fromPath('tmp/testdir')
         childdict = manifest.root.children_as_dict
 
-        self.assertTrue(stat.S_ISREG(childdict['testfile_a'].st_mode))
         self.assertTrue(stat.S_ISDIR(childdict['testdir'].st_mode))
         self.assertTrue(stat.S_ISCHR(childdict['mixer-testdev'].st_mode))
         self.assertTrue(stat.S_ISREG(childdict['testdir'].children_as_dict['deeper_file'].st_mode))
@@ -48,6 +47,7 @@ class TestManifest(unittest.TestCase):
         for child in manifest_new.root._children:
             if child.name == "testfile_a":
                 child.name = "kartoffelbrei"
+
         self.assertNotEquals(manifest_orig, manifest_new)
 
     def testIterate(self):
