@@ -24,7 +24,7 @@ def fromPath(path, datastore=None):
     else:
         unionfspath = None
 
-    root = _searchFiles(path, '', datastore, '/', unionfspath)
+    root = _searchFiles(path, '', datastore, '', unionfspath)
     return Manifest(root)
 
 def fromXML(xml_file):
@@ -67,8 +67,6 @@ def fromXML(xml_file):
 def _searchFiles(root, subpath, datastore, name, unionfspath):
     #the root + subpath split is needed for unionfs check
     path = root + subpath 
-    assert(os.path.exists(path))
-
     stats = os.lstat(path)
 
     if stat.S_ISLNK(stats.st_mode):
