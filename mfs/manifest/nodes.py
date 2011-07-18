@@ -216,7 +216,7 @@ class Directory(Node):
             print "mkdir {0}: {1}".format(exporter.getPath(self), strerror)
 
         olddir = exporter.directory
-        exporter.directory = self.name
+        exporter.directory = exporter.directory + '/' + self.name
 
         for child in ( self._children + self._whiteouts ):
             child.export(datastore, exporter)
@@ -265,6 +265,10 @@ class File(Node):
 
     __slots__ = Node.__slots__ + [ 'hash', 'orig_inode' ]
 
+    def __init__(self, name, stats=None):
+        Node.__init__(self,name,stats)
+        self.hash = None
+
     def toXML(self):
         xml = super(File,self).toXML()
         if hasattr(self, "orig_inode"):
@@ -281,15 +285,15 @@ class File(Node):
                 os.link(exporter.linkcache[self.orig_inode], exporter.getPath(self))
                 return
             else:
-                exporter.linkcache[node.orig_inode] = exporter.getPath(self)
+                exporter.linkcache[self.orig_inode] = exporter.getPath(self)
 
         source = datastore.getData(self)
         dest = file(exporter.getPath(self), 'w')
             
         buf = source.read(1024)
         while len(buf):
-            buf = source.read(1024)
             dest.write(buf)
+            buf = source.read(1024)
 
         source.close()
         dest.close()
