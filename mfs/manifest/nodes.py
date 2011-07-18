@@ -246,7 +246,6 @@ class Directory(Node):
             for string in str(child).splitlines():
                 retval += '\n'
                 retval += self.name + '/' + string
-                asdf
                 
         return retval
 
