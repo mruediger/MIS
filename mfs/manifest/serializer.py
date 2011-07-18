@@ -80,9 +80,10 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         if name.startswith(".wh."):
             return DeleteNode(name[4:])
 
-        if (unionfspath and os.path.exists(unionfspath + subpath)
-            and not os.path.isdir(unionfspath + subpath)):
-            return DeleteNode(name)
+        # FIXME unionfs disabled
+        #if (unionfspath and os.path.exists(unionfspath + subpath)
+        #    and not os.path.isdir(unionfspath + subpath)):
+        #    return DeleteNode(name)
         
         node = File(name, stats)
         #FIXME into constructor
