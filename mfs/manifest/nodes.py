@@ -38,11 +38,9 @@ class Manifest(object):
         for child in self.root:
             yield(child)
 
-class Node(object):
-    
+class Stats(object):
+
     __slots__ = [
-        'name',
-        'inode',
         'st_uid',
         'st_gid',
         'st_blksize',   #TODO sparse files checken
@@ -52,25 +50,35 @@ class Node(object):
         'st_mtime',
         'st_ctime',
         'st_mode',
-        'st_nlink', 
-        'whiteout' ]
+        'st_nlink' ]
+
+    def __init__(self, stats=None):
+        for key in self.__slots__:
+            setattr(self, key, getattr(stats, key, None))
+
+    def export(self, path):
+        os.chown(path, self.st_uid, self.st_gid)        #TODO security
+        os.utime(path, (self.st_atime, self.st_mtime))
+        os.chmod(path, self.st_mode)                    #TODO security
+
+class Node(object):
+    
+    __slots__ = [
+        'name',
+        'inode',
+        'stats' ]
 
     def __init__(self, name, stats=None):
         if (name is None):
             raise ValueError
         self.name = name
-        self.whiteout = False
-
-        if stats is not None:
-            for key in [key for key in self.__slots__ if key.startswith("st_")]:
-                setattr(self, key, getattr(stats, key))
+        if not stats: stats = Stats()
+        self.stats = stats
         
     def __str__(self):
         return self.name
 
     def __eq__(self, node):
-        if self.__slots__ != node.__slots__:
-            return False
 
         for key in self.__slots__:
             #inode is dynamic
@@ -126,30 +134,20 @@ class Node(object):
             element.text = str(attr)
         return xml
 
-    #only defined for special files
-    st_rdev = property(lambda self: 0)
-
-    def apply_stats(self, path):
-        os.chown(path, self.st_uid, self.st_gid)        #TODO security
-        os.utime(path, (self.st_atime, self.st_mtime))
-        os.chmod(path, self.st_mode)                    #TODO security
-
-
 class SymbolicLink(Node):
 
     __slots__ = Node.__slots__ + [ 'target' ]
 
     def toXML(self):
         xml = super(SymbolicLink,self).toXML()
-        if hasattr(self, "target"):
-           element = etree.SubElement(xml, "target", type="str")
-           element.text = self.target
+        element = etree.SubElement(xml, "target", type="str")
+        element.text = self.target
         return xml
 
     def export(self, datastore, exporter):
         try:
             os.symlink(self.target, exporter.getPath(self))
-            self.apply_stats(exporter.getPath(self))
+            self.stats.export(exporter.getPath(self))
         except OSError as (errno, strerror):
             print "symlink: {0}: {1}".format(exporter.getPath(self), strerror)
             return
@@ -158,15 +156,21 @@ class SymbolicLink(Node):
 class Device(Node):
 
     #the rest is handled automaticly by setStat
-    __slots__ = Node.__slots__ + ['st_rdev']
+    __slots__ = Node.__slots__ + ['rdev']
     
+    def toXML(self):
+        xml = super(Device, self).toXML()
+        element = etree.SubElement(xml, "rdev", type="int")
+        element.text = str(self.rdev)
+        return xml
+
     def export(self, datastore, exporter):
         try:
-            os.mknod(exporter.getPath(self), self.st_mode, os.makedev(
-                os.major(self.st_rdev),
-                os.minor(self.st_rdev)
+            os.mknod(exporter.getPath(self), self.stats.st_mode, os.makedev(
+                os.major(self.rdev),
+                os.minor(self.rdev)
             ))
-            self.apply_stats(exporter.getPath(self))
+            self.stats.export(exporter.getPath(self))
         except OSError as (errno, strerror):
             print "mknod: {0}: {1}".format(exporter.getPath(self), strerror)
             return
@@ -176,7 +180,7 @@ class FIFO(Node):
     def export(self, datastore, exporter):
         try:
             os.mkfifo(exporter.getPath(self))
-            self.apply_stats(exporter.getPath(self))
+            self.stats.export(exporter.getPath(self))
         except OSError as (errno, strerror):
             print "mkfifo: {0}: {1}".format(exporter.getPath(self), strerror)
             return
@@ -211,7 +215,7 @@ class Directory(Node):
     def export(self, datastore, exporter):
         try:
             os.mkdir(exporter.getPath(self))
-            self.apply_stats(exporter.getPath(self))
+            self.stats.export(exporter.getPath(self))
         except OSError as (errno, strerror):
             print "mkdir {0}: {1}".format(exporter.getPath(self), strerror)
 
@@ -280,7 +284,7 @@ class File(Node):
         return xml
 
     def export(self, datastore, exporter):
-        if (self.st_nlink > 1):
+        if (self.stats.st_nlink > 1):
             if (self.orig_inode in exporter.linkcache):
                 os.link(exporter.linkcache[self.orig_inode], exporter.getPath(self))
                 return
@@ -297,7 +301,7 @@ class File(Node):
 
         source.close()
         dest.close()
-        self.apply_stats(exporter.getPath(self))
+        self.stats.export(exporter.getPath(self))
 
 class DeleteNode(object):
     __slots__ = [

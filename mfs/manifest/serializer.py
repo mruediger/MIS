@@ -40,7 +40,7 @@ def fromXML(xml_file):
 
         if (element.tag.startswith("st_") and action=="end"):
             try:
-                setattr(parent[len(parent) - 1], element.tag, eval(element.get("type"))(element.text))
+                setattr(parent[len(parent) - 1].stats, element.tag, eval(element.get("type"))(element.text))
             except TypeError, err:
                 print element.tag + ":" + str(err)
                 print "type is: " + str(type(element.text))
@@ -68,7 +68,8 @@ def fromXML(xml_file):
 def _searchFiles(root, subpath, datastore, name, unionfspath):
     #the root + subpath split is needed for unionfs check
     path = root + subpath 
-    stats = os.lstat(path)
+    orig_stats = os.lstat(path)
+    stats = Stats(orig_stats)
 
     if stat.S_ISLNK(stats.st_mode):
         node = SymbolicLink(name, stats)
@@ -86,7 +87,7 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         
         node = File(name, stats)
         #FIXME into constructor
-        node.orig_inode = stats.st_ino
+        node.orig_inode = orig_stats.st_ino
         hl = hashlib.sha256()
         fobj = open(path, 'r')
         while True:
@@ -112,11 +113,10 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
 
         return node
 
-    if stat.S_ISBLK(stats.st_mode):
-        return Device(name, stats)
-
-    if stat.S_ISCHR(stats.st_mode):
-        return Device(name, stats)
+    if stat.S_ISBLK(stats.st_mode) or stat.S_ISCHR(stats.st_mode):
+        dev = Device(name, stats)
+        dev.rdev = orig_stats.st_rdev
+        return dev
 
     if stat.S_ISFIFO(stats.st_mode):
         return FIFO(name, stats)

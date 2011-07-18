@@ -32,7 +32,7 @@ class MergerTest(unittest.TestCase):
         #merge doesnt modify sources
         target = merge(self.orig, self.orig)
         self.assertEquals(target, self.orig)
-        target.root.st_gid = 1234
+        target.root.stats.st_gid = 1234
         self.assertNotEquals(target, self.orig)
 
         #merge with empty

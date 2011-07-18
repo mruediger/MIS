@@ -22,11 +22,11 @@ class TestExport(unittest.TestCase):
     
     def testExportDirectory(self):
         directory = Directory("test")
-        directory.st_uid   = 1000
-        directory.st_gid   = 1000
-        directory.st_atime = 1234567 
-        directory.st_mtime = 12345678
-        directory.st_mode  = 16866
+        directory.stats.st_uid   = 1000
+        directory.stats.st_gid   = 1000
+        directory.stats.st_atime = 1234567 
+        directory.stats.st_mtime = 12345678
+        directory.stats.st_mode  = 16866
         manifest = Manifest(directory)
         manifest.export(self.tmpdir, None)
         self.assertTrue(os.path.isdir(self.tmpdir + '/' + "test"))
@@ -36,11 +36,11 @@ class TestExport(unittest.TestCase):
 
     def testExportDirectoryContents(self):
         directory = Directory("testdir_with_content")
-        directory.st_uid   = 1000
-        directory.st_gid   = 1000
-        directory.st_atime = 1234567 
-        directory.st_mtime = 12345678
-        directory.st_mode  = 16866
+        directory.stats.st_uid   = 1000
+        directory.stats.st_gid   = 1000
+        directory.stats.st_atime = 1234567 
+        directory.stats.st_mtime = 12345678
+        directory.stats.st_mode  = 16866
 
         (num, tmpfile) = tempfile.mkstemp()
         node = File(tmpfile)
@@ -51,31 +51,31 @@ class TestExport(unittest.TestCase):
  
         for n in range(0,10):
             testfile = File("file" + str(n))
-            testfile.st_uid = 1000
-            testfile.st_gid = 1000
-            testfile.st_atime = 1234567
-            testfile.st_mtime = 7654321
-            testfile.st_nlink = 1
-            testfile.st_mode  = 33188
+            testfile.stats.st_uid = 1000
+            testfile.stats.st_gid = 1000
+            testfile.stats.st_atime = 1234567
+            testfile.stats.st_mtime = 7654321
+            testfile.stats.st_nlink = 1
+            testfile.stats.st_mode  = 33188
             testfile.addTo(directory)
             testfile.hash = node.hash
 
         subdir = Directory('subdir')
-        subdir.st_uid = 1000
-        subdir.st_gid = 1000
+        subdir.stats.st_uid = 1000
+        subdir.stats.st_gid = 1000
         subdir.addTo(directory)
-        subdir.st_atime = 1234567
-        subdir.st_mtime = 7654321
-        subdir.st_mode  = 16866
+        subdir.stats.st_atime = 1234567
+        subdir.stats.st_mtime = 7654321
+        subdir.stats.st_mode  = 16866
 
         subfile = File('file')
-        subfile.st_uid = 1000
-        subfile.st_gid = 1000
+        subfile.stats.st_uid = 1000
+        subfile.stats.st_gid = 1000
         subfile.addTo(subdir)
-        subfile.st_atime = 1234567
-        subfile.st_mtime = 7654321
-        subfile.st_mode  = 33188
-        subfile.st_nlink = 1
+        subfile.stats.st_atime = 1234567
+        subfile.stats.st_mtime = 7654321
+        subfile.stats.st_mode  = 33188
+        subfile.stats.st_nlink = 1
         subfile.hash = node.hash
 
         manifest = Manifest(directory)
@@ -91,12 +91,12 @@ class TestExport(unittest.TestCase):
 
     def testExportFile(self):
         testfile = File("file")
-        testfile.st_uid = 1000
-        testfile.st_gid = 1000
-        testfile.st_atime = 1234567
-        testfile.st_mtime = 7654321
-        testfile.st_nlink = 1
-        testfile.st_mode  = 33188
+        testfile.stats.st_uid = 1000
+        testfile.stats.st_gid = 1000
+        testfile.stats.st_atime = 1234567
+        testfile.stats.st_mtime = 7654321
+        testfile.stats.st_nlink = 1
+        testfile.stats.st_mode  = 33188
 
         (num, tmpfile) = tempfile.mkstemp()
         node = File(tmpfile)
@@ -119,13 +119,13 @@ class TestExport(unittest.TestCase):
         if (os.environ['USER'] != 'root'):
             return
         testdev = Device("mixer")
-        testdev.st_uid = 1000
-        testdev.st_gid = 1000
-        testdev.st_atime = 1234567
-        testdev.st_mtime = 7654321
-        testdev.st_nlink = 1
-        testdev.st_rdev  = 64512L
-        testdev.st_mode  = 8612
+        testdev.stats.st_uid = 1000
+        testdev.stats.st_gid = 1000
+        testdev.stats.st_atime = 1234567
+        testdev.stats.st_mtime = 7654321
+        testdev.stats.st_nlink = 1
+        testdev.stats.st_rdev  = 64512L
+        testdev.stats.st_mode  = 8612
 
         manifest = Manifest(testdev)
         manifest.export(self.tmpdir, None)
@@ -139,12 +139,12 @@ class TestExport(unittest.TestCase):
 
         testlink = SymbolicLink("testlink")
         testlink.target = tmpfile
-        testlink.st_uid = 1000
-        testlink.st_gid = 1000
-        testlink.st_atime = 1234567
-        testlink.st_mtime = 7654321
-        testlink.st_nlink = 1
-        testlink.st_mode  = 8612
+        testlink.stats.st_uid = 1000
+        testlink.stats.st_gid = 1000
+        testlink.stats.st_atime = 1234567
+        testlink.stats.st_mtime = 7654321
+        testlink.stats.st_nlink = 1
+        testlink.stats.st_mode  = 8612
         
         manifest = Manifest(testlink)
         manifest.export(self.tmpdir, None)
@@ -155,12 +155,12 @@ class TestExport(unittest.TestCase):
 
     def testFIFO(self):
         testfifo = FIFO("testfifo")
-        testfifo.st_uid = 1000
-        testfifo.st_gid = 1000
-        testfifo.st_atime = 1234567
-        testfifo.st_mtime = 7654321
-        testfifo.st_nlink = 1
-        testfifo.st_mode  = 8612
+        testfifo.stats.st_uid = 1000
+        testfifo.stats.st_gid = 1000
+        testfifo.stats.st_atime = 1234567
+        testfifo.stats.st_mtime = 7654321
+        testfifo.stats.st_nlink = 1
+        testfifo.stats.st_mode  = 8612
         
         manifest = Manifest(testfifo)
         manifest.export(self.tmpdir, None)
@@ -170,11 +170,11 @@ class TestExport(unittest.TestCase):
     
     def testDirectoryWithWhiteouts(self):
         directory = Directory("testdir_with_whiteouts")
-        directory.st_uid   = 1000
-        directory.st_gid   = 1000
-        directory.st_atime = 1234567 
-        directory.st_mtime = 12345678
-        directory.st_mode  = 16866
+        directory.stats.st_uid   = 1000
+        directory.stats.st_gid   = 1000
+        directory.stats.st_atime = 1234567 
+        directory.stats.st_mtime = 12345678
+        directory.stats.st_mode  = 16866
 
         (num, tmpfile) = tempfile.mkstemp()
         node = File(tmpfile)
@@ -188,12 +188,12 @@ class TestExport(unittest.TestCase):
  
         for n in range(0,10):
             testfile = File("file" + str(n))
-            testfile.st_uid = 1000
-            testfile.st_gid = 1000
-            testfile.st_atime = 1234567
-            testfile.st_mtime = 7654321
-            testfile.st_nlink = 1
-            testfile.st_mode  = 33188
+            testfile.stats.st_uid = 1000
+            testfile.stats.st_gid = 1000
+            testfile.stats.st_atime = 1234567
+            testfile.stats.st_mtime = 7654321
+            testfile.stats.st_nlink = 1
+            testfile.stats.st_mode  = 33188
             testfile.addTo(directory)
             testfile.hash = node.hash
             if (n == 2 or n == 4):

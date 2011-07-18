@@ -28,10 +28,10 @@ class TestManifest(unittest.TestCase):
         manifest = mfs.manifest.serializer.fromPath('tmp/testdir')
         childdict = manifest.root.children_as_dict
 
-        self.assertTrue(stat.S_ISDIR(childdict['testdir'].st_mode))
-        self.assertTrue(stat.S_ISCHR(childdict['mixer-testdev'].st_mode))
-        self.assertTrue(stat.S_ISREG(childdict['testdir'].children_as_dict['deeper_file'].st_mode))
-        self.assertEquals(os.stat('tmp/testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].st_rdev)
+        self.assertTrue(stat.S_ISDIR(childdict['testdir'].stats.st_mode))
+        self.assertTrue(stat.S_ISCHR(childdict['mixer-testdev'].stats.st_mode))
+        self.assertTrue(stat.S_ISREG(childdict['testdir'].children_as_dict['deeper_file'].stats.st_mode))
+        self.assertEquals(os.stat('tmp/testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].rdev)
 
         self.assertEquals('testfile_a', manifest.root._whiteouts[0].name)
         #self.assertEquals('another_file', childdict['testdir']._whiteouts[0].name)
