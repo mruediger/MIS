@@ -1,3 +1,7 @@
+Proggen:
+    manifest.diff()
+    stat export fertig machen
+
 Performance Test:
     parallels hashing pro/contra
     dateisystem caching optimieren
@@ -44,7 +48,6 @@ Nice to have:
     cleanup datastore
     ACL
     ctime
-
 
 Packaging:
     pychecker
