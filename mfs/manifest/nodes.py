@@ -89,6 +89,9 @@ class Node(object):
                 if (hasattr(self,key) != hasattr(node,key)):
                     return False
         return True
+
+    def toPath(self, parent_path):
+        yield (parent_path + '/' + self.name, self)
     
     def __iter__(self):
         yield self
@@ -192,6 +195,13 @@ class Directory(Node):
         for child in self._children + self._whiteouts:
             xml.append(child.toXML())
         return xml
+
+    def toPath(self, parent_path):
+        path = parent_path + '/' + self.name
+        yield (path, self)
+        for child in self._children:
+            for retval in child.toPath(path):
+                yield retval
 
     def copy(self):
         retval = super(Directory,self).copy()
