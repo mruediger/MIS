@@ -64,11 +64,21 @@ class Stats(object):
         return Stats(self) 
 
     def __eq__(self, stats):
-        return all( [ getattr(self, slot, None) == getattr(stats, slot, None) for slot in self.__slots__ ] )
+        slots = filter(lambda x: not x.endswith("time"), self.__slots__)
+        return all([ getattr(self, slot, None) == getattr(stats, slot, None) for slot in slots ])
 
     def __str__(self):
         return str().join([slot + ":" + str(getattr(self,slot,None)) + '\n' for slot in self.__slots__])
 
+    def toXML(self):
+        xml = etree.Element("stats")
+        for key in filter(lambda x: x.startswith("st_"), self.__slots__):
+            if not hasattr(self,key): continue
+            attr = getattr(self,key)
+            element = etree.SubElement(xml, key, type=type(attr).__name__)
+            element.text = str(attr)
+        return xml
+        
     def export(self, path):
         os.chown(path, self.st_uid, self.st_gid)        #TODO security
         os.utime(path, (self.st_atime, self.st_mtime))
@@ -79,7 +89,6 @@ class Node(object):
     __slots__ = [
         'name',
         'parent',
-        'inode',
         'stats' ]
 
     def diff(self, node):
@@ -94,6 +103,7 @@ class Node(object):
                 retval.append("{0} != {1} ({2}: {3},{4})".format(self, node, slot, s, n))
 
         for slot in self.stats.__slots__:
+            if (slot.endswith('time')) : continue
             s = getattr(self.stats, slot, None)
             n = getattr(node.stats, slot, None)
             if (s != n):
@@ -166,12 +176,7 @@ class Node(object):
         xml = etree.Element("file")
         xml.attrib["name"] = self.name
         xml.attrib["type"] = type(self).__name__
-
-        for key in filter(lambda x: x.startswith("st_"), self.__slots__):
-            if not hasattr(self,key): continue
-            attr = getattr(self,key)
-            element = etree.SubElement(xml, key, type=type(attr).__name__)
-            element.text = str(attr)
+        xml.append(self.stats.toXML())
         return xml
 
 class SymbolicLink(Node):
@@ -187,9 +192,9 @@ class SymbolicLink(Node):
     def export(self, datastore, exporter):
         try:
             os.symlink(self.target, exporter.getPath(self))
-            self.stats.export(exporter.getPath(self))
         except OSError as (errno, strerror):
-            print "symlink: {0}: {1}".format(exporter.getPath(self), strerror)
+            #not a real error
+            #print "symlink: {0}: {1}".format(exporter.getPath(self), strerror)
             return
 
 
