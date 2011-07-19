@@ -7,6 +7,7 @@ the manifest object and the classes representing files"""
 
 import stat
 import os
+import copy
 
 from lxml import etree
 from collections import deque
@@ -16,6 +17,9 @@ class Manifest(object):
 
     def __init__(self, root):
         self.root = root
+
+    def diff(self, manifest):
+        return self.root.diff(manifest.root)
 
     def toXML(self):
         tree = etree.ElementTree(self.root.toXML())
@@ -54,7 +58,16 @@ class Stats(object):
 
     def __init__(self, stats=None):
         for key in self.__slots__:
-            setattr(self, key, getattr(stats, key, None))
+            setattr(self, key, copy.copy(getattr(stats, key, None)))
+
+    def __copy__(self):
+        return Stats(self) 
+
+    def __eq__(self, stats):
+        return all( [ getattr(self, slot, None) == getattr(stats, slot, None) for slot in self.__slots__ ] )
+
+    def __str__(self):
+        return str().join([slot + ":" + str(getattr(self,slot,None)) + '\n' for slot in self.__slots__])
 
     def export(self, path):
         os.chown(path, self.st_uid, self.st_gid)        #TODO security
@@ -65,8 +78,28 @@ class Node(object):
     
     __slots__ = [
         'name',
+        'parent',
         'inode',
         'stats' ]
+
+    def diff(self, node):
+        retval = list()
+        for slot in self.__slots__:
+            if (slot == 'stats') : continue
+            if (slot == 'parent') : continue
+            if (slot == '_children') : continue
+            s = getattr(self, slot, None)
+            n = getattr(node, slot, None)
+            if (s != n):
+                retval.append("{0} != {1} ({2}: {3},{4})".format(self, node, slot, s, n))
+
+        for slot in self.stats.__slots__:
+            s = getattr(self.stats, slot, None)
+            n = getattr(node.stats, slot, None)
+            if (s != n):
+                retval.append("{0} != {1} ({2}: {3},{4})".format(self, node, slot, s, n))
+            
+        return retval 
 
     def __init__(self, name, stats=None):
         if (name is None):
@@ -74,13 +107,20 @@ class Node(object):
         self.name = name
         if not stats: stats = Stats()
         self.stats = stats
+        self.parent = None
         
     def __str__(self):
-        return self.name
+        if (self.parent):
+            return str(self.parent) + '/' + self.name
+        else:
+            return '/' + self.name
 
     def __eq__(self, node):
 
         for key in self.__slots__:
+            #we do not want to loop endlessly
+            if (key == 'parent') : continue
+
             #inode is dynamic
             if (key == 'inode') : continue
 
@@ -90,12 +130,9 @@ class Node(object):
 
             #time may differ slightly
             if (key.endswith('time')) : continue
-            if (hasattr(self, key) and hasattr(node, key)):
-                if (getattr(self, key) != getattr(node, key)):
-                    return False
-            else:
-                if (hasattr(self,key) != hasattr(node,key)):
-                    return False
+            if not getattr(self, key, None) == getattr(node, key, None):
+                return False
+
         return True
 
     def toPath(self, parent_path):
@@ -114,12 +151,15 @@ class Node(object):
     def addTo(self, directory):
         assert isinstance(directory, Directory)
         directory._children.append(self)
+        self.parent = directory
 
     def copy(self):
         retval = self.__new__(type(self), self.name)
         for key in self.__slots__:
             if hasattr(self, key):
-                setattr(retval, key,getattr(self,key))
+                setattr(retval, key, copy.copy(getattr(self,key)))
+        
+
         return retval
 
     def toXML(self):
@@ -233,6 +273,24 @@ class Directory(Node):
             for retval in child:
                 yield retval
 
+    def diff(self, directory):
+        retval = super(Directory, self).diff(directory)
+
+        sdict = self.children_as_dict
+        ndict = directory.children_as_dict
+
+        for key in set(sdict.keys() + ndict.keys()):
+            if (not key in sdict):
+                retval.append("{0} only in {1} (<)".format(key, str(self)))
+                continue
+            if (not key in ndict):
+                retval.append("{0} only in {1} (>)".format(key, str(directory)))
+                continue
+            retval += sdict[key].diff(ndict[key])
+        
+        return retval
+
+
     def __eq__(self, node):
         if (not super(Directory,self).__eq__(node)):
             return False
@@ -253,15 +311,6 @@ class Directory(Node):
                     return False
 
             return True
-
-    def __str__(self):
-        retval = self.name
-        for child in self._children:
-            for string in str(child).splitlines():
-                retval += '\n'
-                retval += self.name + '/' + string
-                
-        return retval
 
     children_as_dict = property(lambda self: dict( (child.name, child) for child in self._children ))
 
@@ -305,11 +354,13 @@ class File(Node):
 
 class DeleteNode(object):
     __slots__ = [
-        'name'
+        'name',
+        'parent'
     ]
 
     def __init__(self, name):
         self.name = name
+        self.parent = None
 
     def toXML(self):
         xml = etree.Element("file")
@@ -323,6 +374,7 @@ class DeleteNode(object):
     def addTo(self, directory):
         assert isinstance(directory, Directory)
         directory._whiteouts.append(self)
+        self.parent = directory
 
     def __eq__(self, node):
         return isinstance(node ,DeleteNode) and (self.name == node.name)
@@ -332,7 +384,10 @@ class DeleteNode(object):
         return self.name.__hash__()
         
     def __str__(self):
-        return "DeleteNode ({0})".format(self.name)
+        if (self.parent):
+            return str(self.parent) + '/' + self.name + '(delnode)'
+        else:
+            return '/' + self.name + '(delnode)'
     
     def __init__(self, name):
         self.name = name
