@@ -54,6 +54,9 @@ def fromXML(xml_file):
         if (element.tag == "target" and action=="end"):
             parent[len(parent) - 1].target = element.text
 
+        if (element.tag == "rdev" and action=="end"):
+            parent[len(parent) - 1].rdev = int(element.text)
+
         #because root will get removed to, we need a dummy
         if (element.tag == "file" and action=="end"):
             me = parent.pop() 
@@ -61,9 +64,9 @@ def fromXML(xml_file):
             me.addTo(mum)
             parent.append(mum)
             element.clear()
-    
-    return Manifest(parent.pop()._children[0])
-
+    root = parent.pop()._children[0]
+    root.parent = None
+    return Manifest(root)
 
 def _searchFiles(root, subpath, datastore, name, unionfspath):
     #the root + subpath split is needed for unionfs check
