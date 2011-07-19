@@ -40,6 +40,15 @@ def datastore_cleanup(argv):
     """removes all files that are not in the manifest files provied as an argument"""
     pass
 
+
+def diff(file_a, file_b):
+    manifest_a = mfs.manifest.serializer.fromXML(file_a)
+    manifest_b = mfs.manifest.serializer.fromXML(file_b)
+
+    for line in manifest_a.diff(manifest_b):
+        print line
+
+
 def datastore_store(argv):
     """stores all files specified in the manifest in the provided datastore location"""
 
@@ -68,6 +77,7 @@ if __name__ == "__main__":
     help_message += """\n   export : store contents of a manifest to a directory"""
     help_message += """\n   store  : store files to datastore"""
     help_message += """\n   clean  : remove unneded files form datastore"""
+    help_message += """\n   diff   : compare two manifest files"""
 
     try:
         action = sys.argv[1]
@@ -84,3 +94,11 @@ if __name__ == "__main__":
 
     if (action == "store"):
         datastore_store(sys.argv[2:])
+
+    if (action == "diff"):
+        try:
+            diff(sys.argv[2], sys.argv[3])
+        except IndexError:
+            print "usage {0} diff FILE_A FILE_B".format(sys.argv[0])
+
+            

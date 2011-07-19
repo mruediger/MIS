@@ -42,6 +42,9 @@ class TestManifest(unittest.TestCase):
         xml = etree.tostring(manifest_orig.toXML(), pretty_print=True)
         manifest_new = mfs.manifest.serializer.fromXML(StringIO(xml))
 
+        for line in manifest_orig.diff(manifest_new):
+            print line
+
         self.assertEquals(manifest_orig, manifest_new)
 
         for child in manifest_new.root._children:

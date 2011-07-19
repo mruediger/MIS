@@ -27,10 +27,6 @@ class TestDiff(unittest.TestCase):
         new_manifest.root.name = "123"
         self.assertEquals('/ != /123 (name: ,123)', self.manifest.diff(new_manifest)[0])
         new_manifest.root.name  = ""
-        new_manifest.root.inode = '123'
-        self.assertEquals(self.manifest.root.stats, new_manifest.root.stats)
-        self.assertEquals('/ != / (inode: None,123)', self.manifest.diff(new_manifest)[0])
-        new_manifest.root.inode = None
 
         #stats
         new_manifest.root.stats.st_gid = "0"
@@ -55,7 +51,6 @@ class TestDiff(unittest.TestCase):
         self.manifest.root._children[0].name = "kartoffelbrei"
         self.assertEquals('kartoffelbrei only in / (>)', self.manifest.diff(new_manifest)[0])
         self.assertEquals('testfile only in / (<)', self.manifest.diff(new_manifest)[1])
-
 
 if __name__ == "__main__":
     unittest.main()
