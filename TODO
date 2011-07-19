@@ -31,8 +31,6 @@ Fragen:
     speichern wo und wie und warum
 
 Muse Have:
-    manifest erzeugung und datastore speicherung trennen
-        ( create_datastore manifest.xml source dest )
     unionfs/aufs behandlung mit delete_nodes im manifest
     export von delete_nodes als aufs/unionfs
     editieren von images mit delete nodes
