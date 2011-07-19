@@ -124,7 +124,7 @@ class TestExport(unittest.TestCase):
         testdev.stats.st_atime = 1234567
         testdev.stats.st_mtime = 7654321
         testdev.stats.st_nlink = 1
-        testdev.stats.st_rdev  = 64512L
+        testdev.rdev  = 64512L
         testdev.stats.st_mode  = 8612
 
         manifest = Manifest(testdev)
