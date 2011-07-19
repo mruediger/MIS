@@ -1,6 +1,5 @@
 Proggen:
-    manifest.diff()
-    stat export fertig machen
+    with fuer datei operationen
 
 Performance Test:
     parallels hashing pro/contra

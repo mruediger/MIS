@@ -64,7 +64,8 @@ def datastore_store(argv):
     datastore = mfs.datastore.Datastore(datastore_path)
 
     for path, node in manifest.root.toPath(source):
-        if isinstance (node, mfs.manifest.nodes.File):
+        if (isinstance (node, mfs.manifest.nodes.File)
+            and not os.path.exists(datastore.getPath(node))):
             print "storing {0}".format(path)
             datastore.saveData(node, path)
 

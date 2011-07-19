@@ -346,15 +346,21 @@ class File(Node):
                 exporter.linkcache[self.orig_inode] = exporter.getPath(self)
 
         source = datastore.getData(self)
-        dest = file(exporter.getPath(self), 'w')
-            
-        buf = source.read(1024)
-        while len(buf):
-            dest.write(buf)
-            buf = source.read(1024)
+        dest = file(exporter.getPath(self), 'wb')
 
-        source.close()
+        #sparsefile handling from a shautil patch
+        while True:
+            buf = source.read(16*4096)
+            if not buf:
+                break
+            if sparsefile and buf == '\0'*len(buf):
+                dest.seek(len(buf), os.SEEK_CUR)
+            else:
+                dest.write(buf)
+
+        dest.truncate(self.stats.st_size)
         dest.close()
+        source.close()
         self.stats.export(exporter.getPath(self))
 
 class DeleteNode(object):

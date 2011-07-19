@@ -15,7 +15,7 @@ class Datastore(object):
         if (not os.path.exists(path)):
             raise ValueError("file does not exist")
 
-        fobj = open(path, 'r')
+        fobj = open(path, 'rb')
 
         if not node.hash:
             hl = hashlib.sha256()
@@ -29,9 +29,7 @@ class Datastore(object):
         self.store.saveData(node, fobj)
 
     def getPath(self, node):
-        hashdir  = self.path + '/' + node.hash[:2]
-        hashfile = hashdir + '/' + node.hash[2:]
-        return (hashdir, hashfile)
+        return self.store.path + '/' + node.hash[:2] + '/' + node.hash[2:]
 
     def getData(self, node):
         return self.store.getData(node)
@@ -77,13 +75,20 @@ class DirStore(object):
         if (not os.path.exists(destdir)):
             os.makedirs(destdir)
         if (not os.path.exists(destfile)):
-            dest = file(destfile,'w')
+            dest = file(destfile,'wb')
             fobj.seek(0)
-            buf = fobj.read(1024)
-            while len(buf):
-                dest.write(buf)
-                buf = fobj.read(1024)
 
+            #sparsefile handling from a shautil patch
+            while True:
+                buf = fobj.read(node.stats.st_blksize)
+                if not buf:
+                    break
+                if buf == '\0'*len(buf):
+                    dest.seek(len(buf), os.SEEK_CUR)
+                else:
+                    dest.write(buf)
+
+            dest.truncate()
             dest.close()
             fobj.close()
 
