@@ -94,7 +94,7 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         hl = hashlib.sha256()
         fobj = open(path, 'r')
         while True:
-            data = fobj.read(1024 * 1024)
+            data = fobj.read(16 * 4096)
             if not data: break
             hl.update(data)
 

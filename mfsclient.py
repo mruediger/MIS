@@ -1,6 +1,9 @@
 #!/usr/bin/python
     
 import sys,os
+import thread
+
+import threadpool
 import lxml
 
 import mfs
@@ -69,6 +72,12 @@ def datastore_store(argv):
             print "storing {0}".format(source + node.path)
             datastore.saveData(node, source + node.path)
 
+def datastore_fsck(datastore_path):
+    """checks the files in the datastore for consistency"""
+    datastore = mfs.datastore.Datastore(datastore_path)
+
+    for filehash in datastore.contents():
+        datastore.check(filehash)
 
 if __name__ == "__main__":
     
@@ -78,6 +87,7 @@ if __name__ == "__main__":
     help_message += """\n   export : store contents of a manifest to a directory"""
     help_message += """\n   store  : store files to datastore"""
     help_message += """\n   clean  : remove unneded files form datastore"""
+    help_message += """\n   fsck   : check the datastore for file corruption"""
     help_message += """\n   diff   : compare two manifest files"""
 
     try:
@@ -95,6 +105,12 @@ if __name__ == "__main__":
 
     if (action == "store"):
         datastore_store(sys.argv[2:])
+
+    if (action == "fsck"):
+        try:
+            datastore_fsck(sys.argv[2])
+        except IndexError:
+            print "usage {0} fsck DATASTORE".format(sys.argv[0])
 
     if (action == "diff"):
         try:

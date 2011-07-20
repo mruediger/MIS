@@ -29,11 +29,17 @@ class Datastore(object):
             node.hash = hl.hexdigest()
         self.store.saveData(node, fobj)
 
+    def getData(self, node):
+        return self.store.getData(node)
+
+    def contents(self):
+        return self.store.contents()
+
     def contains(self, node):
         return self.store.contains(node)
 
-    def getData(self, node):
-        return self.store.getData(node)
+    def check(self, filehash):
+        return self.store.check(filehash)
 
 class MemStore(object):
 
@@ -45,11 +51,18 @@ class MemStore(object):
         self.data[node.hash] = MemStoreContainer(fobj.read())
         fobj.close()
 
+    def getData(self, node):
+        return self.data[node.hash]
+
+    def contents(self):
+        return data.keys()
+
     def contains(self, node):
         return node.hash in self.data
 
-    def getData(self, node):
-        return self.data[node.hash]
+    def check(self, filehash):
+        return True
+
 
 class MemStoreContainer(object):
     
@@ -99,5 +112,21 @@ class DirStore(object):
     def getData(self, node):
         return open(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])
 
+    def contents(self):
+        retval = list()
+        for dirname in os.listdir(self.path):
+            for filename in os.listdir(self.path + '/' + dirname):
+                retval.append(dirname + filename)
+        return retval
+
     def contains(self, node):
         return os.path.exists(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])
+
+    def check(self, filehash):
+        with open(self.path + '/' + filehash[:2] + '/' + filehash[2:], 'rb') as f:
+            hl = hashlib.sha256()
+            while True:
+                data = f.read(16 * 4096)
+                if not data: break
+                hl.update(data)
+            return hl.hexdigest() == filehash

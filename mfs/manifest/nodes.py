@@ -55,6 +55,13 @@ class Stats(object):
         'st_ctime',
         'st_mode',
         'st_nlink' ]
+    
+    def __getstate__(self):
+        return [ getattr(self, slot, None) for slot in self.__slots__ ]
+
+    def __setstate__(self, state):
+        for i in range(0, len(state)):
+            setattr(self, self.__slots__[i], state[i])
 
     def __init__(self, stats=None):
         for key in self.__slots__:
@@ -90,6 +97,14 @@ class Node(object):
         'name',
         'parent',
         'stats' ]
+
+    def __getstate__(self):
+        return [ getattr(self, slot, None) for slot in self.__slots__ ]
+
+    def __setstate__(self, state):
+        for i in range(0, len(state)):
+            setattr(self, self.__slots__[i], state[i])
+            
 
     def diff(self, node):
         retval = list()
