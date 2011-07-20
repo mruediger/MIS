@@ -29,8 +29,8 @@ class Datastore(object):
             node.hash = hl.hexdigest()
         self.store.saveData(node, fobj)
 
-    def getPath(self, node):
-        return self.store.path + '/' + node.hash[:2] + '/' + node.hash[2:]
+    def contains(self, node):
+        return self.store.contains(node)
 
     def getData(self, node):
         return self.store.getData(node)
@@ -44,6 +44,9 @@ class MemStore(object):
         fobj.seek(0)
         self.data[node.hash] = MemStoreContainer(fobj.read())
         fobj.close()
+
+    def contains(self, node):
+        return node.hash in self.data
 
     def getData(self, node):
         return self.data[node.hash]
@@ -75,23 +78,26 @@ class DirStore(object):
 
         if (not os.path.exists(destdir)):
             os.makedirs(destdir)
-        if (not os.path.exists(destfile)):
-            dest = file(destfile,'wb')
-            fobj.seek(0)
 
-            #sparsefile handling from a shautil patch
-            while True:
-                buf = fobj.read(node.stats.st_blksize)
-                if not buf:
-                    break
-                if buf == '\0'*len(buf):
-                    dest.seek(len(buf), os.SEEK_CUR)
-                else:
-                    dest.write(buf)
+        dest = file(destfile,'wb')
+        fobj.seek(0)
 
-            dest.truncate()
-            dest.close()
-            fobj.close()
+        #sparsefile handling from a shautil patch
+        while True:
+            buf = fobj.read(node.stats.st_blksize)
+            if not buf:
+                break
+            if buf == '\0'*len(buf):
+                dest.seek(len(buf), os.SEEK_CUR)
+            else:
+                dest.write(buf)
+
+        dest.truncate()
+        dest.close()
+        fobj.close()
 
     def getData(self, node):
         return open(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])
+
+    def contains(self, node):
+        return os.path.exists(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])

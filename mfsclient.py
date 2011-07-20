@@ -63,11 +63,11 @@ def datastore_store(argv):
     manifest = mfs.manifest.serializer.fromXML(xml_path)
     datastore = mfs.datastore.Datastore(datastore_path)
 
-    for path, node in manifest.root.toPath(source):
+    for node in manifest:
         if (isinstance (node, mfs.manifest.nodes.File)
-            and not os.path.exists(datastore.getPath(node))):
-            print "storing {0}".format(path)
-            datastore.saveData(node, path)
+            and not datastore.contains(node)):
+            print "storing {0}".format(source + node.path)
+            datastore.saveData(node, source + node.path)
 
 
 if __name__ == "__main__":

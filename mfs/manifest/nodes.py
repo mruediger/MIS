@@ -145,8 +145,11 @@ class Node(object):
 
         return True
 
-    def toPath(self, parent_path):
-        yield (parent_path + '/' + self.name, self)
+    def toPath(self):
+        if (self.parent):
+            return self.parent.path + '/' + self.name
+        else:
+            return self.name
     
     def __iter__(self):
         yield self
@@ -178,6 +181,8 @@ class Node(object):
         xml.attrib["type"] = type(self).__name__
         xml.append(self.stats.toXML())
         return xml
+
+    path = property(lambda self: self.toPath())
 
 class SymbolicLink(Node):
 
@@ -244,13 +249,6 @@ class Directory(Node):
         for child in self._children + self._whiteouts:
             xml.append(child.toXML())
         return xml
-
-    def toPath(self, parent_path):
-        path = parent_path + '/' + self.name
-        yield (path, self)
-        for child in self._children:
-            for retval in child.toPath(path):
-                yield retval
 
     def copy(self):
         retval = super(Directory,self).copy()
