@@ -18,6 +18,7 @@ class Datastore(object):
         fobj = open(path, 'rb')
 
         if not node.hash:
+            #TODO why sha256?
             hl = hashlib.sha256()
         
             while True:
