@@ -1,15 +1,15 @@
 import os
 import hashlib
+import urlparse
+import tempfile
 
 class Datastore(object):
 
-    def __init__(self, path=None):
-        if path is None:
-            self.store = MemStore()
-        else:
-            if (not os.path.exists(path)):
-                raise ValueError("path does not exist")
-            self.store = DirStore(path)
+    def __init__(self, path):
+        if (not os.path.exists(path)):
+            raise ValueError("path does not exist")
+        self.path = path
+        self.url = "file://" + os.path.abspath(path) + '/'
 
     def saveData(self, node, path):
         if (not os.path.exists(path)):
@@ -27,65 +27,7 @@ class Datastore(object):
                 hl.update(data)
 
             node.hash = hl.hexdigest()
-        self.store.saveData(node, fobj)
 
-    def getData(self, node):
-        return self.store.getData(node)
-
-    def contents(self):
-        return self.store.contents()
-
-    def contains(self, node):
-        return self.store.contains(node)
-
-    def check(self, filehash):
-        return self.store.check(filehash)
-
-class MemStore(object):
-
-    def __init__(self):
-        self.data = dict()
-
-    def saveData(self, node, fobj):
-        fobj.seek(0)
-        self.data[node.hash] = MemStoreContainer(fobj.read())
-        fobj.close()
-
-    def getData(self, node):
-        return self.data[node.hash]
-
-    def contents(self):
-        return data.keys()
-
-    def contains(self, node):
-        return node.hash in self.data
-
-    def check(self, filehash):
-        return True
-
-
-class MemStoreContainer(object):
-    
-    def __init__(self, data):
-        self.data = data
-        self.pos = 0
-
-    def read(self, count=0):
-        if (count == 0):
-            return self.data
-        else:
-            pos = self.pos
-            self.pos = pos+count
-            return self.data[pos:pos+count]
-
-    def close(self):
-        pass
-
-class DirStore(object):
-    def __init__(self, path):
-        self.path = path
-
-    def saveData(self, node, fobj):
         destdir  = self.path + '/' + node.hash[:2]
         destfile = destdir   + '/' + node.hash[2:]
 
@@ -107,7 +49,11 @@ class DirStore(object):
 
         dest.truncate()
         dest.close()
+
         fobj.close()
+
+    def getURL(self, node):
+        return urlparse.urljoin(self.url, node.hash[:2] + '/' + node.hash[2:])
 
     def getData(self, node):
         return open(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])

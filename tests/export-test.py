@@ -15,10 +15,11 @@ class TestExport(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
+        self.datastore = Datastore(tempfile.mkdtemp())
     
     def tearDown(self):
-        return
         shutil.rmtree(self.tmpdir)
+        shutil.rmtree(self.datastore.path)
     
     def testExportDirectory(self):
         directory = Directory("test")
@@ -44,13 +45,14 @@ class TestExport(unittest.TestCase):
 
         (num, tmpfile) = tempfile.mkstemp()
         node = File(tmpfile)
+        node.stats = Stats(os.stat(tmpfile))
         file(tmpfile, 'w').write("testcontent")
-        datastore = Datastore()
-        datastore.saveData(node, tmpfile)
+        self.datastore.saveData(node, tmpfile)
         os.remove(tmpfile)
  
         for n in range(0,10):
             testfile = File("file" + str(n))
+            testfile.stats = node.stats
             testfile.stats.st_uid = 1000
             testfile.stats.st_gid = 1000
             testfile.stats.st_atime = 1234567
@@ -69,6 +71,8 @@ class TestExport(unittest.TestCase):
         subdir.stats.st_mode  = 16866
 
         subfile = File('file')
+        subfile.stats = node.stats
+        subfile.hash = node.hash
         subfile.stats.st_uid = 1000
         subfile.stats.st_gid = 1000
         subfile.addTo(subdir)
@@ -76,10 +80,9 @@ class TestExport(unittest.TestCase):
         subfile.stats.st_mtime = 7654321
         subfile.stats.st_mode  = 33188
         subfile.stats.st_nlink = 1
-        subfile.hash = node.hash
 
         manifest = Manifest(directory)
-        manifest.export(self.tmpdir, datastore)      
+        manifest.export(self.tmpdir, self.datastore)      
 
         for n in range(0,10):
             self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_content/file' + str(n)))
@@ -90,25 +93,26 @@ class TestExport(unittest.TestCase):
         self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_content/subdir/file'))
 
     def testExportFile(self):
+
+        (num, tmpfile) = tempfile.mkstemp()
+        node = File(tmpfile)
+        file(tmpfile, 'w').write("testcontent")
+        node.stats = Stats(os.stat(tmpfile))
+        self.datastore.saveData(node, tmpfile)
+        os.remove(tmpfile)
+
         testfile = File("file")
+        testfile.stats = node.stats
         testfile.stats.st_uid = 1000
         testfile.stats.st_gid = 1000
         testfile.stats.st_atime = 1234567
         testfile.stats.st_mtime = 7654321
         testfile.stats.st_nlink = 1
         testfile.stats.st_mode  = 33188
-
-        (num, tmpfile) = tempfile.mkstemp()
-        node = File(tmpfile)
-        file(tmpfile, 'w').write("testcontent")
-        datastore = Datastore()
-        datastore.saveData(node, tmpfile)
-        os.remove(tmpfile)
-
         testfile.hash = node.hash
 
         manifest = Manifest(testfile)
-        manifest.export(self.tmpdir, datastore)
+        manifest.export(self.tmpdir, self.datastore)
         self.assertTrue(os.path.exists(self.tmpdir + '/' + 'file'))
         self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'file')[ST_ATIME])
         self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'file')[ST_MTIME])
@@ -178,16 +182,15 @@ class TestExport(unittest.TestCase):
 
         (num, tmpfile) = tempfile.mkstemp()
         node = File(tmpfile)
+        node.stats = Stats(os.stat(tmpfile))
         file(tmpfile, 'w').write("testcontent")
-        datastore = Datastore()
-        datastore.saveData(node, tmpfile)
+        self.datastore.saveData(node, tmpfile)
 
-        print tmpfile
-
-        #os.remove(tmpfile)
+        os.remove(tmpfile)
  
         for n in range(0,10):
             testfile = File("file" + str(n))
+            testfile.stats = node.stats
             testfile.stats.st_uid = 1000
             testfile.stats.st_gid = 1000
             testfile.stats.st_atime = 1234567
@@ -200,7 +203,7 @@ class TestExport(unittest.TestCase):
                 DeleteNode("file" + str(n)).addTo(directory)
 
         manifest = Manifest(directory)
-        manifest.export(self.tmpdir, datastore)      
+        manifest.export(self.tmpdir, self.datastore)      
 
         for n in range(0,10):
             self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n)))
@@ -211,7 +214,7 @@ class TestExport(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
         self.tmpdir = tempfile.mkdtemp()
 
-        manifest.export(self.tmpdir, datastore, whiteouts="unionfs")
+        manifest.export(self.tmpdir, self.datastore, whiteouts="unionfs")
         for n in range(0,10):
             if (n == 2 or n == 4):
                 self.assertTrue(os.path.exists(self.tmpdir + '/' + '.unionfs/testdir_with_whiteouts/file' + str(n)))
@@ -223,7 +226,7 @@ class TestExport(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
         self.tmpdir = tempfile.mkdtemp()
 
-        manifest.export(self.tmpdir, datastore, whiteouts="aufs")
+        manifest.export(self.tmpdir, self.datastore, whiteouts="aufs")
         for n in range(0,10):
             if (n == 2 or n == 4):
                 self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_whiteouts/.wh.file' + str(n)))

@@ -4,12 +4,12 @@ import mfs.manifest
 class Exporter(object):
 
     def __init__(self, target):
-        self._target = target
+        self._target = os.path.abspath(target) + '/'
         self.linkcache = dict()
         self.directory = ""
 
     def getPath(self, node):
-        return self._target + '/' + self.directory + '/' + node.name
+        return self._target + '/' + node.path
 
     def handleWhiteout(self, node):
         pass

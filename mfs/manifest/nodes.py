@@ -9,9 +9,12 @@ import stat
 import os
 import copy
 
+import mfs.fileops
+
 from lxml import etree
 from collections import deque
 from mfs.exporter import *
+
 
 class Manifest(object):
 
@@ -112,6 +115,7 @@ class Node(object):
             if (slot == 'stats') : continue
             if (slot == 'parent') : continue
             if (slot == '_children') : continue
+            if (slot == 'orig_inode') : continue
             s = getattr(self, slot, None)
             n = getattr(node, slot, None)
             if (s != n):
@@ -119,7 +123,6 @@ class Node(object):
 
         for slot in self.stats.__slots__:
             if (slot.endswith('time')) : continue
-            if (slot == 'orig_inode') : continue
             s = getattr(self.stats, slot, None)
             n = getattr(node.stats, slot, None)
             if (s != n):
@@ -361,26 +364,12 @@ class File(Node):
             else:
                 exporter.linkcache[self.orig_inode] = exporter.getPath(self)
 
-        source = datastore.getData(self)
-        dest = file(exporter.getPath(self), 'wb')
-
-        #sparsefile handling from a shautil patch
         sparsefile = ( self.stats.st_size > 
             ( self.stats.st_blocks * self.stats.st_blksize ))
-        
 
-        while True:
-            buf = source.read(self.stats.st_blksize)
-            if not buf:
-                break
-            if sparsefile and buf == '\0'*len(buf):
-                dest.seek(len(buf), os.SEEK_CUR)
-            else:
-                dest.write(buf)
+        mfs.fileops.copy(datastore.getURL(self), exporter.getPath(self), 
+            sparsefile, self.stats.st_blksize, self.stats.st_size)
 
-        dest.truncate(self.stats.st_size)
-        dest.close()
-        source.close()
         self.stats.export(exporter.getPath(self))
 
 class DeleteNode(object):
