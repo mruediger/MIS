@@ -3,7 +3,6 @@
 import sys,os
 import thread
 
-import threadpool
 import lxml
 
 import mfs
