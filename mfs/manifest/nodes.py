@@ -119,6 +119,7 @@ class Node(object):
 
         for slot in self.stats.__slots__:
             if (slot.endswith('time')) : continue
+            if (slot == 'orig_inode') : continue
             s = getattr(self.stats, slot, None)
             n = getattr(node.stats, slot, None)
             if (s != n):
@@ -273,7 +274,6 @@ class Directory(Node):
     def export(self, datastore, exporter):
         try:
             os.mkdir(exporter.getPath(self))
-            self.stats.export(exporter.getPath(self))
         except OSError as (errno, strerror):
             print "mkdir {0}: {1}".format(exporter.getPath(self), strerror)
 
@@ -282,8 +282,11 @@ class Directory(Node):
 
         for child in ( self._children + self._whiteouts ):
             child.export(datastore, exporter)
-
+        
         exporter.directory = olddir #FIXME
+
+        #set times and mode after files are put into it
+        self.stats.export(exporter.getPath(self))
 
     def __iter__(self):
         yield self
@@ -362,8 +365,12 @@ class File(Node):
         dest = file(exporter.getPath(self), 'wb')
 
         #sparsefile handling from a shautil patch
+        sparsefile = ( self.stats.st_size > 
+            ( self.stats.st_blocks * self.stats.st_blksize ))
+        
+
         while True:
-            buf = source.read(16*4096)
+            buf = source.read(self.stats.st_blksize)
             if not buf:
                 break
             if sparsefile and buf == '\0'*len(buf):
