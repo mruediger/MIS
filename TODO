@@ -1,5 +1,11 @@
 Proggen:
     with fuer datei operationen
+    bla or 'default' anstatt hasattr()
+    deprecated decorator implementieren
+
+Server:
+    pythonscript per ssh aufgerufen, der nach
+    stdout schreibt und so mit dem client communiziert
 
 Performance Test:
     parallels hashing pro/contra
