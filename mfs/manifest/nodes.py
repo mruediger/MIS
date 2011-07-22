@@ -91,8 +91,8 @@ class Stats(object):
         
     def export(self, path):
         os.chown(path, self.st_uid, self.st_gid)        #TODO security
-        os.utime(path, (self.st_atime, self.st_mtime))
         os.chmod(path, self.st_mode)                    #TODO security
+        os.utime(path, (self.st_atime, self.st_mtime))
 
 class Node(object):
     
@@ -100,6 +100,16 @@ class Node(object):
         'name',
         'parent',
         'stats' ]
+
+    _diffignore = [
+        'st_ctime',
+        'st_atime',
+        'stats',
+        'parent',
+        '_children',
+        '_whiteouts',
+        'orig_inode'
+    ]
 
     def __getstate__(self):
         return [ getattr(self, slot, None) for slot in self.__slots__ ]
@@ -112,19 +122,19 @@ class Node(object):
     def diff(self, node):
         retval = list()
         for slot in self.__slots__:
-            if (slot == 'stats') : continue
-            if (slot == 'parent') : continue
-            if (slot == '_children') : continue
-            if (slot == 'orig_inode') : continue
+            if (slot in self._diffignore): continue
             s = getattr(self, slot, None)
             n = getattr(node, slot, None)
             if (s != n):
                 retval.append("{0} != {1} ({2}: {3},{4})".format(self, node, slot, s, n))
 
         for slot in self.stats.__slots__:
-            if (slot.endswith('time')) : continue
             s = getattr(self.stats, slot, None)
             n = getattr(node.stats, slot, None)
+            if (slot in self._diffignore): continue
+            if (slot.endswith('time')): 
+                s = str(s)
+                n = str(n)
             if (s != n):
                 retval.append("{0} != {1} ({2}: {3},{4})".format(self, node, slot, s, n))
             
@@ -164,12 +174,6 @@ class Node(object):
 
         return True
 
-    def toPath(self):
-        if (self.parent):
-            return self.parent.path + '/' + self.name
-        else:
-            return self.name
-    
     def __iter__(self):
         yield self
 
@@ -201,12 +205,15 @@ class Node(object):
         xml.append(self.stats.toXML())
         return xml
 
-    path = property(lambda self: self.toPath())
+    path = property(lambda self: getattr(self.parent, 'path', "") + self.name)
 
 class SymbolicLink(Node):
 
     __slots__ = Node.__slots__ + [ 'target' ]
 
+    _diffignore = Node._diffignore + [
+        'st_mtime'
+    ]
     def toXML(self):
         xml = super(SymbolicLink,self).toXML()
         element = etree.SubElement(xml, "target", type="str")
@@ -216,6 +223,7 @@ class SymbolicLink(Node):
     def export(self, datastore, exporter):
         try:
             os.symlink(self.target, exporter.getPath(self))
+            os.lchown(exporter.getPath(self), self.stats.st_uid, self.stats.st_gid)
         except OSError as (errno, strerror):
             #not a real error
             #print "symlink: {0}: {1}".format(exporter.getPath(self), strerror)
@@ -257,6 +265,11 @@ class FIFO(Node):
 class Directory(Node):
 
     __slots__ = Node.__slots__ + [ '_children', '_whiteouts'  ]
+    _diffignore = Node._diffignore + [
+        'st_size',
+        'st_blocks'
+    ]
+        
     
     def __init__(self, name, stats=None):
         Node.__init__(self,name, stats)
@@ -336,6 +349,7 @@ class Directory(Node):
 
             return True
 
+    path = property(lambda self: getattr(self.parent, 'path', "") + self.name + '/')
     children_as_dict = property(lambda self: dict( (child.name, child) for child in self._children ))
 
 class File(Node):

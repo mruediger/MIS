@@ -40,22 +40,22 @@ def fromXML(xml_file):
 
         if (element.tag.startswith("st_") and action=="end"):
             try:
-                setattr(parent[len(parent) - 1].stats, element.tag, eval(element.get("type"))(element.text))
+                setattr(parent[-1].stats, element.tag, eval(element.get("type"))(element.text))
             except TypeError, err:
                 print element.tag + ":" + str(err)
                 print "type is: " + str(type(element.text))
 
         if (element.tag == "hash" and action=="end"):
-            parent[len(parent) - 1].hash = element.text
+            parent[-1].hash = element.text
 
         if (element.tag == "orig_inode" and action=="end"):
-            parent[len(parent) - 1].orig_inode = int(element.text)
+            parent[-1].orig_inode = int(element.text)
 
         if (element.tag == "target" and action=="end"):
-            parent[len(parent) - 1].target = element.text
+            parent[-1].target = element.text
 
         if (element.tag == "rdev" and action=="end"):
-            parent[len(parent) - 1].rdev = int(element.text)
+            parent[-1].rdev = int(element.text)
 
         #because root will get removed to, we need a dummy
         if (element.tag == "file" and action=="end"):
@@ -63,7 +63,7 @@ def fromXML(xml_file):
             mum = parent.pop()
             me.addTo(mum)
             parent.append(mum)
-            element.clear()
+
     root = parent.pop()._children[0]
     root.parent = None
     return Manifest(root)
@@ -109,6 +109,8 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         node = Directory(name, stats)
         for childname in os.listdir(path):
             if (childname == '.unionfs'): continue
+            if (childname == '.wh..wh.orph'): continue
+            if (childname == '.wh..wh.plnk'): continue
 
             childpath = subpath + '/' + childname
             child = _searchFiles(root, childpath, datastore, childname, unionfspath)

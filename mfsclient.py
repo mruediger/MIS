@@ -14,8 +14,13 @@ def export_files(argv):
         manifest_file  = argv[0]
         datastore_path = argv[1]
         destination_path = argv[2]
+        export_type = None
+        if len(argv) == 4:
+            export_type = argv[3]
+        if not (export_type == 'aufs' or export_type == 'unionfs'):
+            raise IndexError
     except IndexError as e:
-        print "usage: {0} export MANIFEST DATASTORE DESTINATION".format(sys.argv[0])
+        print "usage: {0} export MANIFEST DATASTORE DESTINATION [aufs,unionfs]".format(sys.argv[0])
         return
 
     for dir in (destination_path, datastore_path):
@@ -25,7 +30,7 @@ def export_files(argv):
 
     datastore = mfs.datastore.Datastore(datastore_path)
     manifest = mfs.manifest.serializer.fromXML(manifest_file)
-    manifest.export(destination_path, datastore)
+    manifest.export(destination_path, datastore, export_type)
 
 def import_files(argv):
     '''traveres through given path and creates a manifest'''
