@@ -1,29 +1,36 @@
-Proggen:
+TODO:
+    versionierung (per index datei?)
+    client-server
+    cleanup datastore
+    unionfs
+    acl
+
+Cleanup Datastore:
+    liste von hashes aus manifesten extrahieren
+    manifeste oder liste von server anfordern
+
+Refactoring:
+    entschlacken von manifest klasse
     with fuer datei operationen
     bla or 'default' anstatt hasattr()
     deprecated decorator implementieren
+    pychecker
 
 Server:
     pythonscript per ssh aufgerufen, der nach
     stdout schreibt und so mit dem client communiziert
 
 Performance Test:
-    parallels hashing pro/contra
     dateisystem caching optimieren
-    einlesen von manifests langsam
+    einlesen von manifests langsam (pickle?)
 
 Mogliche Fehler:
     Dateisystem locking anschauen
     wie funktioniert SHA-1
-
     unionfs mit whiteouts im basis layer testen (muessen bleiben)
     
-Refactoring:
-    entschlacken von manifest klasse
-
 Filtern:
     - scripte auf readonly + unionfs und dann erst importieren
-
 
 Exportieren:
     bashscript + schreiben in sparse image
@@ -31,26 +38,12 @@ Exportieren:
     - vmware
     - virtualbox
 
-Fragen:
-    versionierung in manifest dateien
-    use cases (cli samples)
-    speichern wo und wie und warum
-
 Muse Have:
     unionfs/aufs behandlung mit delete_nodes im manifest
-    export von delete_nodes als aufs/unionfs
-    editieren von images mit delete nodes
-
     netzwerktool zum updaten von images uebers netz
-
 
 Use Cases:
     update + filter layer ohne basis layer
-
-Nice to have:
-    cleanup datastore
-    ACL
-    ctime
 
 Packaging:
     pychecker
