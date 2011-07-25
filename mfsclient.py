@@ -8,38 +8,16 @@ import lxml
 import mfs
 
 
-def export_files(argv):
+def export_files(manifest_path, destination_path, export_type, config):
     """creates all files form the manifest in the provided directory"""
-    try:
-        manifest_file  = argv[0]
-        datastore_path = argv[1]
-        destination_path = argv[2]
-        export_type = None
-        if len(argv) == 4:
-            export_type = argv[3]
-        if not (export_type == 'aufs' or export_type == 'unionfs'):
-            raise IndexError
-    except IndexError as e:
-        print "usage: {0} export MANIFEST DATASTORE DESTINATION [aufs,unionfs]".format(sys.argv[0])
-        return
 
-    for dir in (destination_path, datastore_path):
-        if not (os.path.exists(dir) and os.path.isdir(dir)):
-            print ("ERROR: %s not a directory" % dir)
-            return
-
-    datastore = mfs.datastore.Datastore(datastore_path)
-    manifest = mfs.manifest.serializer.fromXML(manifest_file)
+    print config.datastore
+    datastore = mfs.datastore.Datastore(config.datastore)
+    manifest = mfs.manifest.serializer.fromXML(manifest_path)
     manifest.export(destination_path, datastore, export_type)
 
-def import_files(argv):
-    '''traveres through given path and creates a manifest'''
-    try:
-        path  = argv[0]
-    except IndexError:
-        print "usage: {0} import PATH".format(sys.argv[0])
-        return
-
+def import_files(path):
+    """traveres through given path and creates a manifest"""
     manifest = mfs.manifest.serializer.fromPath(path)
     print lxml.etree.tostring(manifest.toXML(), pretty_print=True)
 
@@ -56,18 +34,9 @@ def diff(file_a, file_b):
         print line
 
 
-def datastore_store(argv):
+def datastore_store(manifest_path):
     """stores all files specified in the manifest in the provided datastore location"""
-
-    try:
-        source = argv[0]
-        xml_path  = argv[1]
-        datastore_path = argv[2]
-    except IndexError:
-        print "usage {0} store SOURCE XML DATASTORE".format(sys.argv[0])
-        return
-
-    manifest = mfs.manifest.serializer.fromXML(xml_path)
+    manifest = mfs.manifest.serializer.fromXML(config.datastore)
     datastore = mfs.datastore.Datastore(datastore_path)
 
     for node in manifest:
@@ -85,7 +54,7 @@ def datastore_fsck(datastore_path):
 
 if __name__ == "__main__":
     
-    help_message = """usage: {0} <command> [<args>]""".format(sys.argv[0])
+    help_message = """usage: {0} <config> <command> [<args>]""".format(sys.argv[0])
     help_message += """\navailable commands are:"""
     help_message += """\n   import : create a manifest from a directory"""
     help_message += """\n   export : store contents of a manifest to a directory"""
@@ -94,32 +63,64 @@ if __name__ == "__main__":
     help_message += """\n   fsck   : check the datastore for file corruption"""
     help_message += """\n   diff   : compare two manifest files"""
 
+    config    = None
+    action    = None
+    arguments = None
+
     try:
-        action = sys.argv[1]
+        with open(sys.argv[1]) as configfile:
+            config = mfs.config.Config(configfile)
+        action = sys.argv[2]
+        arguments = sys.argv[3:]
     except IndexError:
         print help_message
         print sys.argv[0] + " too few arguments"
         sys.exit(1)
-    
+
+
     if (action == "export"):
-        export_files(sys.argv[2:])
+        try:
+            manifest_path    = arguments[0]
+            destination_path = arguments[1]
+            export_type      = None
+    
+            if len(arguments) == 3:
+                export_type = arguments[2]
+            if not (export_type == 'aufs' or export_type == 'unionfs'):
+                raise IndexError
+        except IndexError as e:
+            print "usage: {0} export MANIFEST DESTINATION [aufs,unionfs]".format(sys.argv[0])
+            sys.exit(1)
+
+        if not (os.path.exists(destination_path) and os.path.isdir(destination_path)):
+            print ("ERROR: %s not a directory" % dir)
+            sys.exit(1)
+        export_files(manifest_path, destination_path, export_type, config)
 
     if (action == "import"):
-        import_files(sys.argv[2:])
+        try:
+            import_files(arguments[0])
+        except IndexError:
+            print "usage: {0} import PATH".format(sys.argv[0])
+            sys.exit(1)
 
     if (action == "store"):
-        datastore_store(sys.argv[2:])
+        try:
+            datastore_store(arguments[0], arguments[1])
+        except IndexError:
+            print "usage {0} store SOURCE XML".format(sys.argv[0])
+            sys.exit(1)
 
     if (action == "fsck"):
         try:
-            datastore_fsck(sys.argv[2])
+            datastore_fsck(config)
         except IndexError:
-            print "usage {0} fsck DATASTORE".format(sys.argv[0])
+            print "usage {0} fsck".format(sys.argv[0])
+            sys.exit(1)
 
     if (action == "diff"):
         try:
-            diff(sys.argv[2], sys.argv[3])
+            diff(arguments[0], arguments[1])
         except IndexError:
             print "usage {0} diff FILE_A FILE_B".format(sys.argv[0])
-
-            
+            sys.exit(1)
