@@ -33,42 +33,43 @@ def fromXML(xml_file):
     node = None
 
     for action, element in etree.iterparse(xml_file, events=("start","end")):
-        if (element.tag == "file" and action=="start"):
-            #FIXME USE A FACTORY HERE!!!
-            parent = node
-            node = eval(element.get("type"))(element.get("name"))
+        if (action == "start"):
+            if (element.tag == "file"):
+                #FIXME USE A FACTORY HERE!!!
+                parent = node
+                node = eval(element.get("type"))(element.get("name"))
 
-            if parent:
-                node.addTo(parent)
-            continue
+                if parent:
+                    node.addTo(parent)
+                continue
+        else:
+            if (element.tag[:3] == "st_"):
+                try:
+                    setattr(node.stats, element.tag, eval(element.get("type"))(element.text))
+                except TypeError, err:
+                    print element.tag + ":" + str(err)
+                    print "type is: " + str(type(element.text))
+                continue
 
-        if (element.tag[:3] == "st_" and action=="end"):
-            try:
-                setattr(node.stats, element.tag, eval(element.get("type"))(element.text))
-            except TypeError, err:
-                print element.tag + ":" + str(err)
-                print "type is: " + str(type(element.text))
-            continue
+            if (element.tag == "hash"):
+                node.hash = element.text
+                continue
 
-        if (element.tag == "hash" and action=="end"):
-            node.hash = element.text
-            continue
+            if (element.tag == "orig_inode"):
+                node.orig_inode = int(element.text)
+                continue
 
-        if (element.tag == "orig_inode" and action=="end"):
-            node.orig_inode = int(element.text)
-            continue
+            if (element.tag == "target"):
+                node.target = element.text
+                continue
 
-        if (element.tag == "target" and action=="end"):
-            node.target = element.text
-            continue
+            if (element.tag == "rdev"):
+                node.rdev = int(element.text)
+                continue
 
-        if (element.tag == "rdev" and action=="end"):
-            node.rdev = int(element.text)
-            continue
-
-        if (element.tag == "file" and action=="end"):
-            if node.parent:
-                node = node.parent            
+            if (element.tag == "file"):
+                if node.parent:
+                    node = node.parent            
     
     return Manifest(node)
 
