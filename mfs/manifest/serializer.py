@@ -30,43 +30,47 @@ def fromPath(path, datastore=None):
 
 def fromXML(xml_file):
     """reads xml file and creates a manifest object"""
-    parent = deque( [Directory("dummy")] )
+    node = None
 
     for action, element in etree.iterparse(xml_file, events=("start","end")):
         if (element.tag == "file" and action=="start"):
             #FIXME USE A FACTORY HERE!!!
+            parent = node
             node = eval(element.get("type"))(element.get("name"))
-            parent.append(node)
 
-        if (element.tag.startswith("st_") and action=="end"):
+            if parent:
+                node.addTo(parent)
+            continue
+
+        if (element.tag[:3] == "st_" and action=="end"):
             try:
-                setattr(parent[-1].stats, element.tag, eval(element.get("type"))(element.text))
+                setattr(node.stats, element.tag, eval(element.get("type"))(element.text))
             except TypeError, err:
                 print element.tag + ":" + str(err)
                 print "type is: " + str(type(element.text))
+            continue
 
         if (element.tag == "hash" and action=="end"):
-            parent[-1].hash = element.text
+            node.hash = element.text
+            continue
 
         if (element.tag == "orig_inode" and action=="end"):
-            parent[-1].orig_inode = int(element.text)
+            node.orig_inode = int(element.text)
+            continue
 
         if (element.tag == "target" and action=="end"):
-            parent[-1].target = element.text
+            node.target = element.text
+            continue
 
         if (element.tag == "rdev" and action=="end"):
-            parent[-1].rdev = int(element.text)
+            node.rdev = int(element.text)
+            continue
 
-        #because root will get removed to, we need a dummy
         if (element.tag == "file" and action=="end"):
-            me = parent.pop() 
-            mum = parent.pop()
-            me.addTo(mum)
-            parent.append(mum)
-
-    root = parent.pop()._children[0]
-    root.parent = None
-    return Manifest(root)
+            if node.parent:
+                node = node.parent            
+    
+    return Manifest(node)
 
 def _searchFiles(root, subpath, datastore, name, unionfspath):
     #the root + subpath split is needed for unionfs check
