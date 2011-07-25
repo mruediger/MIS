@@ -1,17 +1,23 @@
 import os
 import hashlib
-import urlparse
 import tempfile
+from urlparse import urlparse, urlsplit, urljoin
 
 class Datastore(object):
 
-    def __init__(self, path):
-        if (not os.path.exists(path)):
-            raise ValueError("path does not exist")
-        self.path = path
-        self.url = "file://" + os.path.abspath(path) + '/'
-
+    def __init__(self, url):
+        if (url[-1] != '/'):
+            url = url + '/'
+        self.url = urlparse(url, 'file')
+        if (self.url.scheme == 'file'):
+            self.path = self.url.path
+        else:
+            self.path = None
+        
     def saveData(self, node, path):
+        if (not self.local):
+            raise ValueError("cannot save to remote datastores")
+
         if (not os.path.exists(path)):
             raise ValueError("file does not exist")
 
@@ -53,10 +59,7 @@ class Datastore(object):
         fobj.close()
 
     def getURL(self, node):
-        return urlparse.urljoin(self.url, node.hash[:2] + '/' + node.hash[2:])
-
-    def getData(self, node):
-        return open(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])
+        return urljoin(self.url.geturl(), node.hash[:2] + '/' + node.hash[2:])
 
     def contents(self):
         retval = list()
@@ -76,3 +79,5 @@ class Datastore(object):
                 if not data: break
                 hl.update(data)
             return hl.hexdigest() == filehash
+
+    local = property(lambda self: not ( self.path == None))
