@@ -8,3 +8,4 @@ import datastore
 import fs
 import manifest
 import fileops
+import config
