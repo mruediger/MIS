@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import unittest
-from mfs.repository import MemRepository
+import mfs
 
-class VersioningTest(unittest.TestCase):
+from mfs.repository import MemRepository,FileRepository
+
+class RepositoryTest(unittest.TestCase):
     
     def setUp(self):
         self.repository = MemRepository()
@@ -18,9 +20,13 @@ class VersioningTest(unittest.TestCase):
         versions = self.repository.getVersions("debian")
         self.assertEquals(['1','1.1'], versions)
 
-    def testGetURL(self):
-        url = self.repository.getURL("debian", "1.1")
-        self.assertEquals('file://tmp/debian-1.1.xml', url)
+    def testFileRepository(self):
+        repository = FileRepository('tmp/repository')
+        self.assertEquals(['debian', 'testdir'], repository.getManifests())
+        self.assertEquals(['1','2','2.1.a'], repository.getVersions('debian'))
+        orig_manifest = mfs.manifest.serializer.fromXML('tmp/repository/testdir.xml')
+        self.assertEquals(orig_manifest, repository.getManifest('testdir'))
+
 
 if __name__ == "__main__":
     unittest.main()
