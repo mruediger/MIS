@@ -11,7 +11,6 @@ import mfs
 def export_files(manifest_path, destination_path, export_type, config):
     """creates all files form the manifest in the provided directory"""
 
-    print config.datastore
     datastore = mfs.datastore.Datastore(config.datastore)
     manifest = mfs.manifest.serializer.fromXML(manifest_path)
     manifest.export(destination_path, datastore, export_type)
