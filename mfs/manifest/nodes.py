@@ -7,12 +7,12 @@ the manifest object and the classes representing files"""
 
 import stat
 import os
-import copy
 
-import mfs.fileops
-
+from copy import copy,deepcopy
 from lxml import etree
 from collections import deque
+
+import mfs.fileops
 from mfs.exporter import *
 
 
@@ -39,10 +39,12 @@ class Manifest(object):
         self.root.export(datastore, exporter)
 
     def __add__(self, manifest):
-        return self
+        new_root = self.root + manifest.root
+        return Manifest(new_root)
 
     def __sub__(self, manifest):
-        return self
+        new_root = self.root - manifest.root
+        return Manifest(new_root)
 
     def __eq__(self, manifest):
         return self.root == manifest.root
@@ -74,10 +76,13 @@ class Stats(object):
 
     def __init__(self, stats=None):
         for key in self.__slots__:
-            setattr(self, key, copy.copy(getattr(stats, key, None)))
+            setattr(self, key, copy(getattr(stats, key, None)))
 
     def __copy__(self):
         return Stats(self) 
+
+    def __deepcopy__(self):
+        return self.__copy__()
 
     def __eq__(self, stats):
         slots = filter(lambda x: not x.endswith("time"), self.__slots__)
@@ -113,9 +118,16 @@ class Node(object):
         'stats',
         'parent',
         '_children',
-        '_whiteouts',
         'orig_inode'
     ]
+
+    def __init__(self, name, stats=None):
+        if (name is None):
+            raise ValueError
+        self.name = name
+        if not stats: stats = Stats()
+        self.stats = stats
+        self.parent = None
 
     def __getstate__(self):
         return [ getattr(self, slot, None) for slot in self.__slots__ ]
@@ -124,6 +136,11 @@ class Node(object):
         for i in range(0, len(state)):
             setattr(self, self.__slots__[i], state[i])
             
+    def __add__(self, node):
+        return copy(node)
+
+    def __sub__(self, node):
+        pass
 
     def diff(self, node):
         retval = list()
@@ -145,14 +162,6 @@ class Node(object):
                 retval.append("{0} != {1} ({2}: {3},{4})".format(self, node, slot, s, n))
             
         return retval 
-
-    def __init__(self, name, stats=None):
-        if (name is None):
-            raise ValueError
-        self.name = name
-        if not stats: stats = Stats()
-        self.stats = stats
-        self.parent = None
         
     def __str__(self):
         if (self.parent):
@@ -169,9 +178,8 @@ class Node(object):
             #inode is dynamic
             if (key == 'inode') : continue
 
-            #children and whiteouts may differ in order
+            #children may differ in order
             if (key == '_children') : continue
-            if (key == '_whiteouts') : continue
 
             #time may differ slightly
             if (key.endswith('time')) : continue
@@ -183,26 +191,35 @@ class Node(object):
     def __iter__(self):
         yield self
 
-    def __hash__(self):
-        """because the merger needs set support"""
-        return self.name.__hash__()
+    def __copy__(self):
+        retval = self.__class__(self.name)
+        for key in self.__slots__:
+            if (key == 'parent'):
+                setattr(retval, key, None)
+                continue
+            if (key == '_children'): 
+                setattr(retval, key, list())
+                continue
+
+            if hasattr(self, key):
+                setattr(retval, key, copy(getattr(self,key)))
+
+        return retval
+
+    def __deepcopy__(self):
+        return self.__copy__()
+
 
     def export(self, datastore, exporter):
         raise Exception("Node Objects cannot be exported")
+
+    def remove(self):
+        os.remove(self.path)
 
     def addTo(self, directory):
         assert isinstance(directory, Directory)
         directory._children.append(self)
         self.parent = directory
-
-    def copy(self):
-        retval = self.__new__(type(self), self.name)
-        for key in self.__slots__:
-            if hasattr(self, key):
-                setattr(retval, key, copy.copy(getattr(self,key)))
-        
-
-        return retval
 
     def toXML(self):
         xml = etree.Element("file")
@@ -270,7 +287,7 @@ class FIFO(Node):
 
 class Directory(Node):
 
-    __slots__ = Node.__slots__ + [ '_children', '_whiteouts'  ]
+    __slots__ = Node.__slots__ + [ '_children' ]
     _diffignore = Node._diffignore + [
         'st_size',
         'st_blocks'
@@ -280,18 +297,70 @@ class Directory(Node):
     def __init__(self, name, stats=None):
         Node.__init__(self,name, stats)
         self._children = list()
-        self._whiteouts = list()
-          
+
+    def __getitem__(self, i):
+        return self._children[i]    
+
+    def __add__(self, node):
+        #FIXME: itertools oder filter/map benutzen
+        snodes = self.children_as_dict
+        nnodes = node.children_as_dict
+
+        nodenames = set( snodes.keys() + nnodes.keys() )
+
+        retval = copy(node)
+
+        for nodename in nodenames:
+            snode = snodes.get(nodename, None)
+            nnode = nnodes.get(nodename, None)
+
+            if (nodename in snodes and nodename in nnodes):
+                newchild = snodes[nodename] + nnodes[nodename]
+            else:
+                tmpnode = nnodes.get(nodename, None)
+                tmpnode = snodes.get(nodename)
+                print tmpnode
+                newchild = tmpnode.__deepcopy__()
+
+                #newchild = ( 
+                #        deepcopy( nnodes.get(nodename, None) )
+                #        or RMNode( deepcopy( snodes.get(nodename) ) )
+                #        )
+            newchild.addTo(retval)
+
+        return retval
+
+    def __len__(self):
+        return len(self._children)
+
+    def __copy__(self):
+        retval = super(Directory,self).__copy__()
+        return retval
+
+    def __sub__(self, node):
+        snodes = self.children_as_dict
+        nnodes = self.children_as_dict
+
+        retval = copy(node)
+
+        nodenames = set( snodes.keys() + nnodes.keys() )
+
+        for nodename in nodenames:
+            if (nodename in snodes and nodename is nnodes):
+                newchild = snodes[nodename] - nnodes[nodename]
+            else:
+                newchild = copy(nnodes.get(nodename, None))
+
+            if newchild:
+                newchild.addTo(retval)
+        
+        return retval
+
     def toXML(self):
         xml = super(Directory,self).toXML()
-        for child in self._children + self._whiteouts:
+        for child in self._children:
             xml.append(child.toXML())
         return xml
-
-    def copy(self):
-        retval = super(Directory,self).copy()
-        retval._children = list()
-        return retval
 
     def export(self, datastore, exporter):
         try:
@@ -302,13 +371,19 @@ class Directory(Node):
         olddir = exporter.directory
         exporter.directory = exporter.directory + '/' + self.name
 
-        for child in ( self._children + self._whiteouts ):
+        for child in self._children:
             child.export(datastore, exporter)
         
         exporter.directory = olddir #FIXME
 
         #set times and mode after files are put into it
         self.stats.export(exporter.getPath(self))
+
+    def remove(self):
+        for child in self._children:
+            child.remove()
+
+        os.remove(self.path)
 
     def __iter__(self):
         yield self
@@ -341,19 +416,15 @@ class Directory(Node):
             if not (len(self._children) == len(node._children)):
                 return False
 
-            if not (len(self._whiteouts) == len(node._whiteouts)):
-                print self._whiteouts
-                print node._whiteouts
-                return False
-
             ochildren = sorted(self._children, key=lambda child: child.name)
             nchildren = sorted(node._children, key=lambda child: child.name)
             
             for n in range(0, len(self._children)):
                 if not ochildren[n] == nchildren[n]:
                     return False
+            
 
-            return True
+        return True
 
     path = property(lambda self: getattr(self.parent, 'path', "") + self.name + '/')
     children_as_dict = property(lambda self: dict( (child.name, child) for child in self._children ))
@@ -392,62 +463,31 @@ class File(Node):
 
         self.stats.export(exporter.getPath(self))
 
-class DeleteNode(object):
+class DeleteNode(Node):
     __slots__ = [
         'name',
         'parent'
     ]
     
-    def __getstate__(self):
-        return [ getattr(self, slot, None) for slot in self.__slots__ ]
-
-    def __setstate__(self, state):
-        for i in range(0, len(state)):
-            setattr(self, self.__slots__[i], state[i])
- 
-    def __init__(self, name):
-        self.name = name
-        self.parent = None
-
-    def toXML(self):
-        xml = etree.Element("file")
-        xml.attrib["name"] = self.name
-        xml.attrib["type"] = type(self).__name__
-        return xml
-
-    def __iter__(self):
-        yield self
-
-    def addTo(self, directory):
-        assert isinstance(directory, Directory)
-        directory._whiteouts.append(self)
-        self.parent = directory
-
-    def __eq__(self, node):
-        return isinstance(node ,DeleteNode) and (self.name == node.name)
-
-    def __hash__(self):
-        """because the merger needs set support"""
-        return self.name.__hash__()
-        
     def __str__(self):
         if (self.parent):
             return str(self.parent) + '/' + self.name + '(delnode)'
         else:
             return '/' + self.name + '(delnode)'
     
-    def __init__(self, name):
-        self.name = name
-
     def export(self, datastore, exporter):
         exporter.handleWhiteout(self) 
 
 class RMNode(Node):
     """RMNode: remove node is a ??? to handle the state of removed files in a manifest 
     generated by manifest_a - manifest_b"""
+
+    __slots__ = Node.__slots__ + [ "node" ]
     
     def __init__(self, node):
+        Node.__init__(self, "RMNode: " + node.name)
         self.node = node
 
     def export(self, datastore, exporter):
-        pass
+        if os.path.exists(self.node.path):
+            self.node.remove()
