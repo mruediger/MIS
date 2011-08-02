@@ -206,7 +206,7 @@ class Node(object):
 
         return retval
 
-    def __deepcopy__(self):
+    def __deepcopy__(self, memo):
         return self.__copy__()
 
 
@@ -303,53 +303,61 @@ class Directory(Node):
 
     def __add__(self, node):
         #FIXME: itertools oder filter/map benutzen
+        retval = copy(node)
+
         snodes = self.children_as_dict
         nnodes = node.children_as_dict
 
         nodenames = set( snodes.keys() + nnodes.keys() )
 
-        retval = copy(node)
 
         for nodename in nodenames:
             snode = snodes.get(nodename, None)
             nnode = nnodes.get(nodename, None)
 
-            if (nodename in snodes and nodename in nnodes):
+            if (snode and nnode):
                 newchild = snodes[nodename] + nnodes[nodename]
+            elif (nnode):
+                newchild = deepcopy(nnode)
             else:
-                tmpnode = nnodes.get(nodename, None)
-                tmpnode = snodes.get(nodename)
-                print tmpnode
-                newchild = tmpnode.__deepcopy__()
+                newchild = RMNode(copy(snode))
 
-                #newchild = ( 
-                #        deepcopy( nnodes.get(nodename, None) )
-                #        or RMNode( deepcopy( snodes.get(nodename) ) )
-                #        )
             newchild.addTo(retval)
 
         return retval
 
-    def __len__(self):
-        return len(self._children)
+    def __deepcopy__(self, memo):
+        retval = self.__copy__()
+        for child in self._children:
+            deepcopy(child).addTo(retval)
+
+        return retval
 
     def __copy__(self):
         retval = super(Directory,self).__copy__()
         return retval
 
     def __sub__(self, node):
-        snodes = self.children_as_dict
-        nnodes = self.children_as_dict
+        if (self == node):
+            return None
 
         retval = copy(node)
+
+        snodes = self.children_as_dict
+        nnodes = node.children_as_dict
+
 
         nodenames = set( snodes.keys() + nnodes.keys() )
 
         for nodename in nodenames:
-            if (nodename in snodes and nodename is nnodes):
-                newchild = snodes[nodename] - nnodes[nodename]
+            snode = snodes.get(nodename, None)
+            nnode = nnodes.get(nodename, None)
+            
+
+            if (snode and nnode):
+                newchild = snode - nnode
             else:
-                newchild = copy(nnodes.get(nodename, None))
+                newchild = deepcopy(snode)
 
             if newchild:
                 newchild.addTo(retval)

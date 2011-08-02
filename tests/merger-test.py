@@ -107,6 +107,9 @@ class MergerTest(unittest.TestCase):
         self.assertNotEquals(target, self.orig)
 
         target = self.orig - self.orig
+        new = Manifest(None)
+        self.assertEquals(new, target)
+
 
 if __name__ == '__main__':
     unittest.main()
