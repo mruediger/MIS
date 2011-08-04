@@ -130,6 +130,15 @@ class MergerTest(unittest.TestCase):
         self.assertTrue(1, len(another_dir._children))
         self.assertEquals("deep_file", another_dir.children_as_dict['deep_file'].name)
 
+    def testHistory(self):
+        new = copy(self.orig)
+        target = self.orig + new
+        print target._parents
+        self.assertTrue(target.is_child_off(self.orig))
+        self.assertTrue(target.is_child_off(new))
+        self.assertTrue(self.orig.is_parent_off(target))
+        self.assertTrue(new.is_parent_off(target))
+
 
 if __name__ == '__main__':
     unittest.main()

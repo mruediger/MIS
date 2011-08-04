@@ -8,7 +8,7 @@ import stat
 from StringIO import StringIO
 from lxml import etree
 
-from mfs.manifest.nodes import Directory,File,Manifest
+from mfs.manifest.nodes import Directory,File,DeleteNode,Manifest
 
 class TestManifest(unittest.TestCase):
 
@@ -33,7 +33,7 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(stat.S_ISREG(childdict['testdir'].children_as_dict['deeper_file'].stats.st_mode))
         self.assertEquals(os.stat('tmp/testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].rdev)
 
-        self.assertEquals('testfile_a', manifest.root._whiteouts[0].name)
+        self.assertTrue(isinstance(manifest.root.children_as_dict['testfile_a'], DeleteNode))
         #self.assertEquals('another_file', childdict['testdir']._whiteouts[0].name)
 
     def testToXML(self):
@@ -84,6 +84,65 @@ class TestManifest(unittest.TestCase):
         
         self.assertEquals(6,len(files))
 
+    def testGetNodeByPath(self):
+        root = Directory("")
+        
+        node = File("file_a")
+        node.hash = "asdf1234"
+        node.addTo(root)
+
+        node = File("file_b")
+        node.hash = "asdf5678"
+        node.addTo(root)
+
+        dirnode = Directory("dir")
+        dirnode.addTo(root)
+
+        node = File('subfile_a')
+        node.hash = "fda1234"
+        node.addTo(dirnode)
+
+        node = File('subfile_b')
+        node.hash = "fda1234"
+        node.addTo(dirnode)
+
+        manifest = Manifest(root)
+
+        self.assertEquals('subfile_a', manifest.node_by_path('/dir/subfile_a').name)
+        self.assertEquals('subfile_a', manifest.node_by_path('dir/subfile_a').name)
+        self.assertEquals(None, manifest.node_by_path('nonedir/nonefile'))
+
+    def testListOfHashes(self):
+        root = Directory("")
+        
+        node = File("file_a")
+        node.hash = "asdf1234"
+        node.addTo(root)
+
+        node = File("file_b")
+        node.hash = "asdf5678"
+        node.addTo(root)
+
+        dirnode = Directory("dir")
+        dirnode.addTo(root)
+
+        node = File('subfile_a')
+        node.hash = "fda1234"
+        node.addTo(dirnode)
+
+        node = File('subfile_b')
+        node.hash = "fda1234"
+        node.addTo(dirnode)
+
+        manifest = Manifest(root)
+
+        hashes = manifest.get_hashes()
+
+        self.assertEquals(4, len(hashes))
+
+        for node in manifest:
+            if isinstance(node, File):
+                self.assertTrue(node.hash in hashes)
 
 if __name__ == '__main__':
     unittest.main()

@@ -7,6 +7,7 @@ the manifest object and the classes representing files"""
 
 import stat
 import os
+import uuid
 
 from copy import copy,deepcopy
 from lxml import etree
@@ -20,6 +21,8 @@ class Manifest(object):
 
     def __init__(self, root):
         self.root = root
+        self.uuid = str(uuid.uuid4())
+        self._parents = list()
 
     def diff(self, manifest):
         return self.root.diff(manifest.root)
@@ -38,16 +41,47 @@ class Manifest(object):
             exporter = Exporter(target)
         self.root.export(datastore, exporter)
 
+    def is_child_off(self, manifest):
+        return manifest.uuid in self._parents
+
+    def is_parent_off(self, manifest):
+        return self.uuid in manifest._parents
+
+    def node_by_path(self, path):
+        node = self.root
+        for path_elm in path.lstrip('/').split('/'):
+            try:
+                node = node.children_as_dict[path_elm]
+            except KeyError:
+                return None
+
+        return node
+
+    def get_hashes(self):
+        hashes = list()
+        for child in self.root:
+            hash = getattr(child, "hash", None)
+            if hash:
+                hashes.append(hash)
+        return hashes
+
     def __copy__(self):
         return Manifest(deepcopy(self.root))
 
     def __add__(self, manifest):
         new_root = self.root + manifest.root
-        return Manifest(new_root)
+        new_manifest = Manifest(new_root)
+        new_manifest._parents.append(self.uuid)
+        new_manifest._parents.append(manifest.uuid)
+        return new_manifest
+
 
     def __sub__(self, manifest):
         new_root = self.root - manifest.root
-        return Manifest(new_root)
+        new_manifest = Manifest(new_root)
+        new_manifest._parents.append(self.uuid)
+        new_manifest._parents.append(manifest.uuid)
+        return new_manifest
 
     def __eq__(self, manifest):
         return self.root == manifest.root
