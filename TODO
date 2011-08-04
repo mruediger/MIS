@@ -1,6 +1,5 @@
 TODO:
     versionierung (per index datei?)
-    client-server
     cleanup datastore
     unionfs
     acl
@@ -15,10 +14,6 @@ Refactoring:
     bla or 'default' anstatt hasattr()
     deprecated decorator implementieren
     pychecker
-
-Server:
-    pythonscript per ssh aufgerufen, der nach
-    stdout schreibt und so mit dem client communiziert
 
 Performance Test:
     dateisystem caching optimieren
@@ -37,10 +32,6 @@ Exportieren:
     - xen
     - vmware
     - virtualbox
-
-Muse Have:
-    unionfs/aufs behandlung mit delete_nodes im manifest
-    netzwerktool zum updaten von images uebers netz
 
 Use Cases:
     update + filter layer ohne basis layer

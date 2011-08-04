@@ -2,6 +2,8 @@
 
 import unittest
 
+from copy import copy
+
 from mfs.manifest.nodes import Directory, File, Manifest, DeleteNode, RMNode
 from mfs.manifest.merge import merge
 
@@ -109,6 +111,24 @@ class MergerTest(unittest.TestCase):
         target = self.orig - self.orig
         new = Manifest(None)
         self.assertEquals(new, target)
+
+        new = copy(self.orig)
+        self.assertEquals(new, self.orig)
+
+        
+        
+        testdir = new.root.children_as_dict['testdir']
+        another_dir = testdir.children_as_dict['another_dir']
+        another_dir._children = list()
+
+        #check if only the file removed from new remains in target
+        target = self.orig - new
+        self.assertTrue(1, len(target.root._children))
+        testdir = target.root.children_as_dict['testdir']
+        self.assertTrue(1, len(testdir._children))
+        another_dir = testdir.children_as_dict['another_dir']
+        self.assertTrue(1, len(another_dir._children))
+        self.assertEquals("deep_file", another_dir.children_as_dict['deep_file'].name)
 
 
 if __name__ == '__main__':

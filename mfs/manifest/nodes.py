@@ -38,6 +38,9 @@ class Manifest(object):
             exporter = Exporter(target)
         self.root.export(datastore, exporter)
 
+    def __copy__(self):
+        return Manifest(deepcopy(self.root))
+
     def __add__(self, manifest):
         new_root = self.root + manifest.root
         return Manifest(new_root)
