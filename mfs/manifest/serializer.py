@@ -46,9 +46,10 @@ def fromXML(xml_file):
             if (element.tag[:3] == "st_"):
                 try:
                     setattr(node.stats, element.tag, eval(element.get("type"))(element.text))
-                except TypeError, err:
-                    print element.tag + ":" + str(err)
-                    print "type is: " + str(type(element.text))
+                except:
+                    print node.name
+                    print element.tag
+                    print "type is: " + str(element.get("type"))
                 continue
 
             if (element.tag == "hash"):
@@ -86,7 +87,7 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
 
     if stat.S_ISREG(stats.st_mode):
         if name.startswith(".wh."):
-            return DeleteNode(name[4:])
+            return DeleteNode(name[4:], stats)
 
         # FIXME unionfs disabled
         #if (unionfspath and os.path.exists(unionfspath + subpath)
