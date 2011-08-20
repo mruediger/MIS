@@ -3,6 +3,9 @@ import os
 
 import mfs
 
+"""A repository class for manifest files, either backed by memory or 
+a directory containing xml files"""
+
 class Repository(object):
     
     def __init__(self):
