@@ -2,11 +2,19 @@ import pickle
 
 class MFSServer(object):
     
-    def __init__(self, repository):
+    def __init__(self, repository, autopatch):
         self.repository = repository
+        self.autopatch = autopatch
 
     def _dispatch(self, method, params):
-        return getattr(self, method)(*params)
+        try:
+            value = getattr(self, method)(*params)
+        except:
+            import traceback
+            traceback.print_exc()
+            raise
+
+        return value
 
     def listManifests(self):
         return self.repository.getManifests()
