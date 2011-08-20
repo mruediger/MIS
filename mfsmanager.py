@@ -85,8 +85,8 @@ if __name__ == "__main__":
     
             if len(arguments) == 3:
                 export_type = arguments[2]
-            if not (export_type == 'aufs' or export_type == 'unionfs'):
-                raise IndexError
+                if not (export_type == 'aufs' or export_type == 'unionfs'):
+                    raise IndexError
         except IndexError as e:
             print "usage: {0} export MANIFEST DESTINATION [aufs,unionfs]".format(sys.argv[0])
             sys.exit(1)
