@@ -31,14 +31,24 @@ def pull(host, config, name, version, folder):
     manifest  = pickle.loads(client.getManifest(name, version))
     manifest.export(folder, datastore)
 
-def update(name, oldversion, version, folder):
+def update(host, config, name, oldversion, newversion, destination):
     '''updates image "name" with version "oldversion" in folder "folder" to "version"'''
-    pass
+    client = xmlrpclib.ServerProxy(host)
+    old_manifest = pickle.loads(client.getManifest(name, oldversion))
+    new_manifest = pickle.loads(client.getManifest(name, newversion))
 
+    datastore = mfs.datastore.Datastore(config.datastore)
+    manifest = new_manfiest - old_manifest
+    manifest.export(destination, datastore)
 
 if __name__ == "__main__":
     
-    help_message = """usage: """
+    help_message = """usage {0}: CONFIGFILE HOSTURL ACTION""".format(sys.argv[0])
+    help_message += """\navailable commands are:"""
+    help_message += """\n   versions : list versions of manifests"""
+    help_message += """\n   print    : prints the latest manifest if version is omitted"""
+    help_message += """\n   pull     : pulls a image into the specified folder"""
+    help_message += """\n   update   : applies changes to the image in the specified folder"""
 
     try:
         with open(sys.argv[1]) as configfile:
@@ -59,12 +69,25 @@ if __name__ == "__main__":
         else:
             print "usage {0} print NAME [VERSION]".format(sys.argv[0])
             sys.exit(1)
+
+    if (action == "update"):
+        try:
+            name = arguments[0]
+            oldversion = arguments[1]
+            newversion = arguments[2]
+            destination = arguments[3]
+            update(host, config, name, oldversion, newversion, destination)
+        except IndexError:
+            print "usage {0} update NAME OLDVERSION NEWVERSION DESTINATION"
+            sys.exit(1)
+
+            
     
     if (action == "versions"):
         try:
             listVersions(host, arguments[0])
         except IndexError:
-            print "usage {0} list NAME".format(sys.argv[0])
+            print "usage {0} versions NAME".format(sys.argv[0])
             sys.exit(1)
 
     if (action == "pull"):
