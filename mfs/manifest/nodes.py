@@ -250,8 +250,8 @@ class Node(object):
     def export(self, datastore, exporter):
         raise Exception("Node Objects cannot be exported")
 
-    def remove(self):
-        os.remove(self.path)
+    def remove(self, exporter):
+        os.remove(exporter.getPath(self))
 
     def addTo(self, directory):
         assert isinstance(directory, Directory)
@@ -357,7 +357,7 @@ class Directory(Node):
             elif (nnode):
                 newchild = deepcopy(nnode)
             else:
-                newchild = RMNode(copy(snode))
+                newchild = RMNode(deepcopy(snode))
 
             newchild.addTo(retval)
 
@@ -424,11 +424,11 @@ class Directory(Node):
         #set times and mode after files are put into it
         self.stats.export(exporter.getPath(self))
 
-    def remove(self):
+    def remove(self, exporter):
         for child in self._children:
-            child.remove()
+            child.remove(exporter)
 
-        os.remove(self.path)
+        os.rmdir(exporter.getPath(self))
 
     def __iter__(self):
         yield self
@@ -534,5 +534,5 @@ class RMNode(Node):
         self.node = node
 
     def export(self, datastore, exporter):
-        if os.path.exists(self.node.path):
-            self.node.remove()
+        if os.path.exists(exporter.getPath(self.node)):
+            self.node.remove(exporter)
