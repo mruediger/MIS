@@ -23,7 +23,7 @@ class RepositoryTest(unittest.TestCase):
     def testFileRepository(self):
         repository = FileRepository('tmp/repository')
         self.assertEquals(['debian', 'testdir'], repository.getManifests())
-        self.assertEquals(['1','2','2.1.a'], repository.getVersions('debian'))
+        self.assertEquals(['1','2','2.1.a', '4'], repository.getVersions('debian'))
         orig_manifest = mfs.manifest.serializer.fromXML('tmp/repository/testdir.xml')
         self.assertEquals(orig_manifest, repository.getManifest('testdir'))
 

@@ -13,7 +13,7 @@ class TestDiff(unittest.TestCase):
     def testEquals(self):
         self.assertEquals(self.manifest, self.manifest)
 
-        new_manifest = copy.deepcopy(self.manifest)
+        new_manifest = copy(self.manifest)
         self.assertEquals(self.manifest.root.stats, new_manifest.root.stats)
         self.assertEquals(self.manifest, new_manifest)
 
@@ -21,7 +21,7 @@ class TestDiff(unittest.TestCase):
         self.assertNotEquals(self.manifest, new_manifest)
         
     def testDiff(self):
-        new_manifest = copy.deepcopy(self.manifest)
+        new_manifest = copy(self.manifest)
         
         #nodes
         new_manifest.root.name = "123"
@@ -33,12 +33,12 @@ class TestDiff(unittest.TestCase):
         self.assertEquals('/ != / (st_gid: None,0)', self.manifest.diff(new_manifest)[0])
 
     def testDirectory(self):
-        new_manifest = copy.deepcopy(self.manifest)
+        new_manifest = copy(self.manifest)
         File('testfile').addTo(new_manifest.root)
         self.assertEquals('testfile only in / (<)', self.manifest.diff(new_manifest)[0])
 
     def testRecDir(self):
-        new_manifest = copy.deepcopy(self.manifest)
+        new_manifest = copy(self.manifest)
         file_a = File('testfile')
         file_a.addTo(new_manifest.root)
         file_b = File('testfile')
