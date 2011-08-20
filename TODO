@@ -1,5 +1,5 @@
 TODO:
-    versionierung (per index datei?)
+    patches fuer /etc/hosts, /var/log, /etc/ssh/ ...
     cleanup datastore
     unionfs
     acl
