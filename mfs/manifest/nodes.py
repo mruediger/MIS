@@ -509,6 +509,8 @@ class File(Node):
         self.stats.export(exporter.getPath(self))
 
 class DeleteNode(Node):
+    #TODO rename to whiteout node
+
     __slots__ = [
         'name',
         'parent'
@@ -522,6 +524,24 @@ class DeleteNode(Node):
     
     def export(self, datastore, exporter):
         exporter.handleWhiteout(self) 
+
+class PatchNode(Node):
+    """PatchNode is a decorator with which the exported file content is changed
+    during export time"""
+
+    __slots__ = Node.__slots__ + [ "node","content" ]
+
+    def __init__(self, node, content):
+        Node.__init__(self, node.name)
+        self.node = node
+        self.content = content
+
+    def export(self, datastore, exporter):
+        with open(exporter.getPath(self.node),'wb') as fdst:
+            fdst.write(self.content)
+
+        fdst.close()
+        
 
 class RMNode(Node):
     """RMNode: remove node is a ??? to handle the state of removed files in a manifest 

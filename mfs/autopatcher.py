@@ -18,14 +18,13 @@ class Autopatcher(object):
     def listFiles(self):
         return self.scripts.keys()
 
-    def getContent(self, filename):
+    def getContent(self, filename, url):
         scriptname = self.scripts[filename]
         process = subprocess.Popen(
-            [scriptname], 
+            [scriptname, url], 
             shell=False, 
             stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
-            universal_newlines=True)
+            stderr=subprocess.PIPE)
 
         (stdoutdata, stderrdata) = process.communicate()
         if (stderrdata) and (len(stderrdata) > 0):

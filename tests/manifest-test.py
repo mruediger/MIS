@@ -144,5 +144,9 @@ class TestManifest(unittest.TestCase):
             if isinstance(node, File):
                 self.assertTrue(node.hash in hashes)
 
+    def testSingleFile(self):
+        manifest =  mfs.manifest.serializer.fromXML('tmp/repository/testdir.xml')
+        self.assertTrue(manifest.node_by_path('/nonexistend') is None)
+
 if __name__ == '__main__':
     unittest.main()

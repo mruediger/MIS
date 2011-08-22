@@ -118,6 +118,13 @@ class TestExport(unittest.TestCase):
         self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'file')[ST_MTIME])
         self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'file')[ST_MODE])
 
+        content = None
+        with open(self.tmpdir + "/file") as src:
+            content = src.read()
+
+        src.close()
+        self.assertEquals('testcontent', content)
+
     def testExportDevice(self):
         # this test is only possible with super user rights
         if (os.environ['USER'] != 'root'):
@@ -234,6 +241,49 @@ class TestExport(unittest.TestCase):
             self.assertEquals(1234567, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_ATIME])
             self.assertEquals(7654321, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MTIME])
             self.assertEquals(33188, os.stat(self.tmpdir + '/' + 'testdir_with_whiteouts/file' + str(n))[ST_MODE])
+
+
+    def testPatchNodes(self):
+        directory = Directory("testdir_with_patchnodes")
+        directory.stats.st_uid   = 1000
+        directory.stats.st_gid   = 1000
+        directory.stats.st_atime = 1234567 
+        directory.stats.st_mtime = 12345678
+        directory.stats.st_mode  = 16866
+
+        (num, tmpfile) = tempfile.mkstemp()
+        node = File(tmpfile)
+        node.stats = Stats(os.stat(tmpfile))
+        file(tmpfile, 'w').write("testcontent")
+        self.datastore.saveData(node, tmpfile)
+
+        os.remove(tmpfile)
+
+        testfile = File("file")
+        testfile.stats = node.stats
+        testfile.stats.st_uid = 1000
+        testfile.stats.st_gid = 1000
+        testfile.stats.st_atime = 1234567
+        testfile.stats.st_mtime = 7654321
+        testfile.stats.st_nlink = 1
+        testfile.stats.st_mode  = 33188
+        testfile.hash = node.hash
+
+        patchnode = PatchNode(testfile, "foobar")
+        patchnode.addTo(directory)
+
+        manifest = Manifest(directory)
+        manifest.export(self.tmpdir, self.datastore)
+
+        self.assertTrue(os.path.exists(self.tmpdir + '/' + 'testdir_with_patchnodes'))
+
+    
+        content = None
+        with open(self.tmpdir + "/file") as src:
+            content = src.read()
+
+        src.close()
+        self.assertEquals('foobar', content)
 
 if __name__ == '__main__':
     unittest.main()
