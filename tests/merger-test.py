@@ -42,10 +42,7 @@ class MergerTest(unittest.TestCase):
         newroot = Directory("orig")
         new = Manifest(newroot)
         target = self.orig + new
-
-        for node in target:
-            if (node.name is not "orig"):
-                self.assertTrue(isinstance(node, RMNode))
+        self.assertEquals(target, self.orig)
 
     def testRecursive(self):
         """test merge with subfolders"""
@@ -82,7 +79,7 @@ class MergerTest(unittest.TestCase):
             newroot.children_as_dict['testdir'].children_as_dict['new_file'], 
             target.root.children_as_dict['testdir'].children_as_dict['new_file'])
 
-        self.assertTrue('RMNode: another_dir' in target.root.children_as_dict['testdir'].children_as_dict)
+        self.assertTrue('another_dir' in target.root.children_as_dict['testdir'].children_as_dict)
 
 
 
@@ -99,23 +96,53 @@ class MergerTest(unittest.TestCase):
         #self.assertEquals("testfile_a", list(target.root._whiteouts)[0].name)
         #self.assertEquals("testfile_b", list(target.root._whiteouts)[1].name)
 
-    def testSubtract(self):
+    def testSubtractEmptyDir(self):
         newroot = Directory("orig")
         new = Manifest(newroot)
         target = self.orig - new
 
-        self.assertEquals(self.orig, target)
-        target.root.stats.st_gid = 1234
-        self.assertNotEquals(target, self.orig)
+        self.assertFalse(target == self.orig)
 
+        for node in target.root:
+            self.assertTrue(isinstance(node, RMNode) or node == target.root)
+
+    
+    def testSubtractWithSelf(self):
         target = self.orig - self.orig
         new = Manifest(None)
         self.assertEquals(new, target)
 
+
+    
+    def testSubtractSingleFile(self):
+        newroot = Directory("orig")
+        testdir = Directory("testdir")
+        another_dir = Directory("another_dir")
+        deep_file = File("deep_file")
+
+        another_dir.addTo(testdir)
+        testdir.addTo(newroot)
+        new = Manifest(newroot)
+
+        self.assertFalse(self.orig.node_by_path('orig/testdir/another_dir/deep_file') is None)
+        target = self.orig - new
+
+
+        self.assertFalse(target.node_by_path('/testdir') is None)
+        self.assertFalse(target.node_by_path('/testdir/another_dir/deep_file') is None)
+
+        deep_file.addTo(another_dir)
+        target = self.orig - new
+
+        self.assertTrue(target.node_by_path('/testdir') is None)
+
+
+
+
+
+    def testSubtractAllExceptOne(self):
         new = copy(self.orig)
         self.assertEquals(new, self.orig)
-
-        
         
         testdir = new.root.children_as_dict['testdir']
         another_dir = testdir.children_as_dict['another_dir']
@@ -128,12 +155,11 @@ class MergerTest(unittest.TestCase):
         self.assertTrue(1, len(testdir._children))
         another_dir = testdir.children_as_dict['another_dir']
         self.assertTrue(1, len(another_dir._children))
-        self.assertEquals("deep_file", another_dir.children_as_dict['deep_file'].name)
+        self.assertTrue(isinstance(another_dir.children_as_dict['deep_file'], RMNode))
 
     def testHistory(self):
         new = copy(self.orig)
         target = self.orig + new
-        print target._parents
         self.assertTrue(target.is_child_off(self.orig))
         self.assertTrue(target.is_child_off(new))
         self.assertTrue(self.orig.is_parent_off(target))

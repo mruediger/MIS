@@ -49,7 +49,10 @@ class Manifest(object):
 
     def node_by_path(self, path):
         node = self.root
-        for path_elm in path.lstrip('/').split('/'):
+        if (path.lstrip('/') == node.name):
+            return node
+
+        for path_elm in path.lstrip(self.root.name + '/').split('/'):
             try:
                 node = node.children_as_dict[path_elm]
             except KeyError:
@@ -204,7 +207,7 @@ class Node(object):
         if (self.parent):
             return str(self.parent) + '/' + self.name
         else:
-            return '/' + self.name
+            return self.name
 
     def __eq__(self, node):
 
@@ -357,7 +360,7 @@ class Directory(Node):
             elif (nnode):
                 newchild = deepcopy(nnode)
             else:
-                newchild = RMNode(deepcopy(snode))
+                newchild = deepcopy(snode)
 
             newchild.addTo(retval)
 
@@ -393,8 +396,8 @@ class Directory(Node):
 
             if (snode and nnode):
                 newchild = snode - nnode
-            else:
-                newchild = deepcopy(snode)
+            elif snode:
+                newchild = RMNode(deepcopy(snode))
 
             if newchild:
                 newchild.addTo(retval)
@@ -550,7 +553,7 @@ class RMNode(Node):
     __slots__ = Node.__slots__ + [ "node" ]
     
     def __init__(self, node):
-        Node.__init__(self, "RMNode: " + node.name)
+        Node.__init__(self, node.name)
         self.node = node
 
     def export(self, datastore, exporter):
