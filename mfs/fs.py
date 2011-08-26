@@ -6,13 +6,8 @@ provides the basic llfuse linkage
 """
 
 import llfuse
-import thread
 import errno
 import mfs
-
-def toEntryAttribute(stat):
-    """converts the generic stat object of a manifest to a generic attribute"""
-    pass
 
 
 class Operations(llfuse.Operations):
@@ -23,12 +18,11 @@ class Operations(llfuse.Operations):
         self.datastore = datastore
         
         self.inodecache = dict ()
-        self.inodecache_lock = thread.allocate_lock()
 
         self.filecache = dict ()
-        self.filecache_lock = thread.allocate_lock()
 
         self.highest_inode = 1
+        self.setNodeAttr(manifest.root)
         self.inodecache[1] = manifest.root
         
         self.hardlinks = dict()
@@ -37,76 +31,67 @@ class Operations(llfuse.Operations):
         pass
 
     def getattr(self, inode):
-        return self.getattrFromNode(self.inodecache[inode], inode)
+        return self.inodecache[inode].entry
 
-    def getattrFromNode(self, node, inode=None):
-        entry = llfuse.EntryAttributes()
-
-        #timeout for attributes in seconds
-        entry.attr_timeout  = 10
-        entry.entry_timeout = 10
-        entry.generation    = 0
-
-        if inode is None:
-            if (isinstance(node, mfs.manifest.nodes.File) and node.stats.st_nlink > 1):
-                if(not self.hardlinks.has_key(node.orig_inode)):
-                    self.highest_inode += 1
-                    self.hardlinks[node.orig_inode] = self.highest_inode
-                inode = self.hardlinks[node.orig_inode]
-            else:
+    def setNodeAttr(self, node):
+        if (isinstance(node, mfs.manifest.nodes.File) and node.stats.st_nlink > 1):
+            if(not self.hardlinks.has_key(node.orig_inode)):
                 self.highest_inode += 1
-                inode = self.highest_inode
+                self.hardlinks[node.orig_inode] = self.highest_inode
+            inode = self.hardlinks[node.orig_inode]
+        else:
+            self.highest_inode += 1
+            inode = self.highest_inode
 
-        entry.st_ino     = inode
-        entry.st_rdev    = node.rdev
-        entry.st_mode    = node.stats.st_mode
-        entry.st_nlink   = node.stats.st_nlink
-        entry.st_uid     = node.stats.st_uid
-        entry.st_gid     = node.stats.st_gid
-        entry.st_size    = node.stats.st_size
-        entry.st_blksize = node.stats.st_blksize
-        entry.st_blocks  = node.stats.st_blocks
-        entry.st_atime   = node.stats.st_atime
-        entry.st_ctime   = node.stats.st_ctime
-        entry.st_mtime   = node.stats.st_mtime 
+        entry = llfuse.EntryAttributes()
+        entry.attr_timeout  = 300
+        entry.entry_timeout = 300
+        entry.generation    = 0
+        entry.st_ino  = inode
+        entry.st_rdev = node.rdev
 
-        with self.inodecache_lock:
-            self.inodecache[inode] = node
+        for attr in filter(lambda x: x.startswith('st_'), node.stats.__slots__):
+            setattr(entry, attr, getattr(node.stats, attr))
 
-        return entry
+
+        node.entry = entry
+        
+        self.inodecache[inode] = node
 
     def forget(self, inode, lookup):
-        try:
-            del self.inodecache[inode]
-        except KeyError:
-            pass
+        pass
 
     def opendir(self, inode):
         return inode
 
     def relasedir(self, fh):
-        del self.inodecache[fh]
+        pass
 
     def readdir(self, fh, off):
         for child in self.inodecache[fh]._children[off:]:
             off += 1
-            yield(child.name, self.getattrFromNode(child), off)
+            if not child.entry:
+                self.setNodeAttr(child)
+
+            yield(child.name, child.entry, off)
 
     def lookup(self, parrent_ino, name):
         if name == '.' or name == '..':
             return self.getattr(parrent_ino) #FIXME
         else:
             try:
-                return self.getattrFromNode(self.inodecache[parrent_ino].children_as_dict[name])
+                node = self.inodecache[parrent_ino].children_as_dict[name]
+                if not node.entry:
+                    self.setNodeAttr(node)
+                return node.entry
             except KeyError:
                 raise llfuse.FUSEError(errno.ENOENT)
 
     def open(self, inode, flags):
         if hasattr(self.inodecache[inode], "hash"):
-            with self.filecache_lock:
-                self.filecache[inode] = open(self.datastore.toPath(
-                    self.inodecache[inode].hash
-                ))
+            self.filecache[inode] = open(self.datastore.toPath(
+                self.inodecache[inode].hash
+            ))
         return inode
 
     def read(self, fh, offset, length):

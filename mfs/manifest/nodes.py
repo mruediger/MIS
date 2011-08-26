@@ -105,18 +105,18 @@ class Stats(object):
         'st_mtime',
         'st_ctime',
         'st_mode',
-        'st_nlink' ]
+        'st_nlink']
     
+    def __init__(self, stats=None):
+        for key in self.__slots__:
+            setattr(self, key, copy(getattr(stats, key, None)))
+
     def __getstate__(self):
         return [ getattr(self, slot, None) for slot in self.__slots__ ]
 
     def __setstate__(self, state):
         for i in range(0, len(state)):
             setattr(self, self.__slots__[i], state[i])
-
-    def __init__(self, stats=None):
-        for key in self.__slots__:
-            setattr(self, key, copy(getattr(stats, key, None)))
 
     def __copy__(self):
         return Stats(self) 
@@ -150,7 +150,8 @@ class Node(object):
     __slots__ = [
         'name',
         'parent',
-        'stats']
+        'stats',
+        'entry']
 
     _diffignore = [
         'st_ctime',
@@ -168,6 +169,7 @@ class Node(object):
         if not stats: stats = Stats()
         self.stats = stats
         self.parent = None
+        self.entry = None
 
     def __getstate__(self):
         return [ getattr(self, slot, None) for slot in self.__slots__ ]
@@ -220,6 +222,9 @@ class Node(object):
 
             #children may differ in order
             if (key == '_children') : continue
+
+            #only existend during fuse mount
+            if (key == 'entry'): continue
 
             #time may differ slightly
             if (key.endswith('time')) : continue
