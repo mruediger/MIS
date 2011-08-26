@@ -150,7 +150,7 @@ class Node(object):
     __slots__ = [
         'name',
         'parent',
-        'stats' ]
+        'stats']
 
     _diffignore = [
         'st_ctime',
@@ -269,6 +269,7 @@ class Node(object):
         return xml
 
     path = property(lambda self: getattr(self.parent, 'path', "") + self.name)
+    rdev = property(lambda self: 0)
 
 class SymbolicLink(Node):
 

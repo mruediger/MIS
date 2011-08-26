@@ -30,7 +30,6 @@ class Operations(llfuse.Operations):
 
         self.highest_inode = 1
         self.inodecache[1] = manifest.root
-        self.manifest.root.inode = 1
         
         self.hardlinks = dict()
 
@@ -38,9 +37,9 @@ class Operations(llfuse.Operations):
         pass
 
     def getattr(self, inode):
-        return self.getattrFromNode(self.inodecache[inode])
+        return self.getattrFromNode(self.inodecache[inode], inode)
 
-    def getattrFromNode(self, node):
+    def getattrFromNode(self, node, inode=None):
         entry = llfuse.EntryAttributes()
 
         #timeout for attributes in seconds
@@ -48,31 +47,31 @@ class Operations(llfuse.Operations):
         entry.entry_timeout = 10
         entry.generation    = 0
 
-        if (not hasattr(node, "inode") or node.inode is None):
-            if (isinstance(node, mfs.manifest.File) and node.st_nlink > 1):
+        if inode is None:
+            if (isinstance(node, mfs.manifest.nodes.File) and node.stats.st_nlink > 1):
                 if(not self.hardlinks.has_key(node.orig_inode)):
                     self.highest_inode += 1
                     self.hardlinks[node.orig_inode] = self.highest_inode
-                node.inode = self.hardlinks[node.orig_inode]
+                inode = self.hardlinks[node.orig_inode]
             else:
                 self.highest_inode += 1
-                node.inode = self.highest_inode
+                inode = self.highest_inode
 
-        entry.st_ino     = node.inode
-        entry.st_mode    = node.st_mode
-        entry.st_nlink   = node.st_nlink
-        entry.st_uid     = node.st_uid
-        entry.st_gid     = node.st_gid
-        entry.st_rdev    = node.st_rdev
-        entry.st_size    = node.st_size
-        entry.st_blksize = node.st_blksize
-        entry.st_blocks  = node.st_blocks
-        entry.st_atime   = node.st_atime
-        entry.st_ctime   = node.st_ctime
-        entry.st_mtime   = node.st_mtime
+        entry.st_ino     = inode
+        entry.st_rdev    = node.rdev
+        entry.st_mode    = node.stats.st_mode
+        entry.st_nlink   = node.stats.st_nlink
+        entry.st_uid     = node.stats.st_uid
+        entry.st_gid     = node.stats.st_gid
+        entry.st_size    = node.stats.st_size
+        entry.st_blksize = node.stats.st_blksize
+        entry.st_blocks  = node.stats.st_blocks
+        entry.st_atime   = node.stats.st_atime
+        entry.st_ctime   = node.stats.st_ctime
+        entry.st_mtime   = node.stats.st_mtime 
 
         with self.inodecache_lock:
-            self.inodecache[node.inode] = node
+            self.inodecache[inode] = node
 
         return entry
 
@@ -89,9 +88,9 @@ class Operations(llfuse.Operations):
         del self.inodecache[fh]
 
     def readdir(self, fh, off):
-        for child in self.inodecache[fh].children[off:]:
+        for child in self.inodecache[fh]._children[off:]:
             off += 1
-            yield(child.name , self.getattrFromNode(child), off)
+            yield(child.name, self.getattrFromNode(child), off)
 
     def lookup(self, parrent_ino, name):
         if name == '.' or name == '..':
@@ -103,19 +102,24 @@ class Operations(llfuse.Operations):
                 raise llfuse.FUSEError(errno.ENOENT)
 
     def open(self, inode, flags):
-        with self.filecache_lock:
-            self.filecache[inode] = self.datastore.getData(
-                self.inodecache[inode]
-            )
+        if hasattr(self.inodecache[inode], "hash"):
+            with self.filecache_lock:
+                self.filecache[inode] = open(self.datastore.toPath(
+                    self.inodecache[inode].hash
+                ))
         return inode
 
     def read(self, fh, offset, length):
-        self.filecache[fh].seek(offset)
-        return self.filecache[fh].read(length)
+        if fh in self.filecache:
+            self.filecache[fh].seek(offset)
+            return self.filecache[fh].read(length)
+        else:
+            return ""
 
     def release(self, fh):
-        self.filecache[fh].close()
-        del self.filecache[fh]
+        if fh in self.filecache:
+            self.filecache[fh].close()
+            del self.filecache[fh]
 
     def readlink(self, inode):
         return self.inodecache[inode].target
