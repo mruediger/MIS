@@ -59,7 +59,7 @@ class Datastore(object):
         fobj.close()
 
     def getURL(self, node):
-        return urljoin(self.url.geturl(), node.hash[:2] + '/' + node.hash[2:])
+        return urljoin(self.url.geturl(), self.toPath(node.hash))
 
     def contents(self):
         retval = list()
@@ -69,10 +69,16 @@ class Datastore(object):
         return retval
 
     def contains(self, node):
-        return os.path.exists(self.path + '/' + node.hash[:2] + '/' + node.hash[2:])
+        return os.path.exists(self.toPath(node.hash))
+
+    def toPath(self, filehash):
+        return self.path + '/' + filehash[:2] + '/' + filehash[2:]
+
+    def remove(self, filehash):
+        os.remove(self.toPath(filehash))
 
     def check(self, filehash):
-        with open(self.path + '/' + filehash[:2] + '/' + filehash[2:], 'rb') as f:
+        with open(self.toPath(filehash), 'rb') as f:
             hl = hashlib.sha256()
             while True:
                 data = f.read(16 * 4096)
