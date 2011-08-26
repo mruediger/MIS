@@ -4,6 +4,8 @@ import sys,os
 import thread
 
 import lxml
+import llfuse
+import logging
 
 import mfs
 
@@ -20,10 +22,41 @@ def import_files(path):
     manifest = mfs.manifest.serializer.fromPath(path)
     print lxml.etree.tostring(manifest.toXML(), pretty_print=True)
 
-def datastore_cleanup(argv):
+def datastore_cleanup(manifests):
     """removes all files that are not in the manifest files provied as an argument"""
-    pass
 
+    hashes = list()
+
+    for manifest_path in manifests:
+        manifest = mfs.manifest.serializer.fromXML(manifest_path)
+        hashes += manifest.get_hashes()
+
+    datastore = mfs.datastore.Datastore(config.datastore)
+
+    todel = set(datastore.contents()) - set(hashes)
+    for filehash in todel:
+        print "removing " + datastore.toPath(filehash)
+        datastore.remove(filehash)
+
+def mount_manifest(manifest_path, mountpoint_path):
+    #init logging
+    formatter = logging.Formatter('%(message)s') 
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.DEBUG)
+    log = logging.getLogger()
+    log.setLevel(logging.INFO)    
+    log.addHandler(handler)
+
+    manifest = mfs.manifest.serializer.fromXML(manifest_path)
+    datastore = mfs.datastore.Datastore(config.datastore)
+    operations = mfs.fs.Operations(
+        manifest,
+        datastore)
+
+    llfuse.init(operations, mountpoint_path, [])
+    llfuse.main(single=False)
+    llfuse.close()
 
 def diff(file_a, file_b):
     manifest_a = mfs.manifest.serializer.fromXML(file_a)
@@ -36,7 +69,7 @@ def diff(file_a, file_b):
 def datastore_store(manifest_path):
     """stores all files specified in the manifest in the provided datastore location"""
     manifest = mfs.manifest.serializer.fromXML(config.datastore)
-    datastore = mfs.datastore.Datastore(datastore_path)
+    datastore = mfs.datastore.Datastore(config.datastore)
 
     for node in manifest:
         if (isinstance (node, mfs.manifest.nodes.File)
@@ -49,7 +82,8 @@ def datastore_fsck(datastore_path):
     datastore = mfs.datastore.Datastore(datastore_path)
 
     for filehash in datastore.contents():
-        datastore.check(filehash)
+        if not datastore.check(filehash):
+            print "error in " + filehash
 
 if __name__ == "__main__":
     
@@ -61,6 +95,7 @@ if __name__ == "__main__":
     help_message += """\n   clean  : remove unneded files form datastore"""
     help_message += """\n   fsck   : check the datastore for file corruption"""
     help_message += """\n   diff   : compare two manifest files"""
+    help_message += """\n   mount  : mount manifest to mountpoint"""
 
     config    = None
     action    = None
@@ -112,7 +147,7 @@ if __name__ == "__main__":
 
     if (action == "fsck"):
         try:
-            datastore_fsck(config)
+            datastore_fsck(arguments[0])
         except IndexError:
             print "usage {0} fsck".format(sys.argv[0])
             sys.exit(1)
@@ -123,3 +158,17 @@ if __name__ == "__main__":
         except IndexError:
             print "usage {0} diff FILE_A FILE_B".format(sys.argv[0])
             sys.exit(1)
+
+    if (action == "cleanup"):
+        try:
+            datastore_cleanup(arguments)
+        except IndexError:
+            print "usage {0} cleanup MANIFEST [MANIFEST [MANIFEST ...".format(sys.argv[0])
+            
+    if (action == "mount"):
+        try:
+            mount_manifest(
+                manifest_path = arguments[0],
+                mountpoint_path = arguments[1])
+        except IndexError:
+            print "usage {0} mount MANIFEST MOUNTPOINT".format(sys.argv[0])
