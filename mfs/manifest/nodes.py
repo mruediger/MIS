@@ -151,7 +151,7 @@ class Node(object):
         'name',
         'parent',
         'stats',
-        'entry']
+        'inode']
 
     _diffignore = [
         'st_ctime',
@@ -169,7 +169,6 @@ class Node(object):
         if not stats: stats = Stats()
         self.stats = stats
         self.parent = None
-        self.entry = None
 
     def __getstate__(self):
         return [ getattr(self, slot, None) for slot in self.__slots__ ]
@@ -222,9 +221,6 @@ class Node(object):
 
             #children may differ in order
             if (key == '_children') : continue
-
-            #only existend during fuse mount
-            if (key == 'entry'): continue
 
             #time may differ slightly
             if (key.endswith('time')) : continue

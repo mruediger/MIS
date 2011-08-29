@@ -1,7 +1,8 @@
 TODO:
-    patches fuer /etc/hosts, /var/log, /etc/ssh/ ...
+    aufs whiteouts bei merge
+    rmnode bei minus
+    
     cleanup datastore
-    unionfs
     acl
 
 Cleanup Datastore:

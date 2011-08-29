@@ -9,10 +9,7 @@ class Datastore(object):
         if (url[-1] != '/'):
             url = url + '/'
         self.url = urlparse(url, 'file')
-        if (self.url.scheme == 'file'):
-            self.path = self.url.path
-        else:
-            self.path = None
+        self.path = self.url.path
         
     def saveData(self, node, path):
         if (not self.local):

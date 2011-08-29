@@ -170,5 +170,6 @@ if __name__ == "__main__":
             mount_manifest(
                 manifest_path = arguments[0],
                 mountpoint_path = arguments[1])
-        except IndexError:
+        except IndexError as e:
+            print e
             print "usage {0} mount MANIFEST MOUNTPOINT".format(sys.argv[0])
