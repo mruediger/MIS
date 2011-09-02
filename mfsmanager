@@ -54,7 +54,7 @@ def mount_manifest(manifest_path, mountpoint_path):
         manifest,
         datastore)
 
-    llfuse.init(operations, mountpoint_path, [])
+    llfuse.init(operations, mountpoint_path, [ b'fsname=marvinfs' ])
     llfuse.main(single=True)
     llfuse.close()
 
