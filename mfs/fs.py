@@ -58,7 +58,7 @@ class Operations(llfuse.Operations):
         entry = llfuse.EntryAttributes()
         entry.attr_timeout  = 300
         entry.entry_timeout = 300
-        entry.generation    = 0
+        entry.generation    = 1
         entry.st_rdev = node.rdev
 
         for attr in filter(lambda x: x.startswith('st_'), node.stats.__slots__):
@@ -90,13 +90,16 @@ class Operations(llfuse.Operations):
 
     def lookup(self, parrent_ino, name):
         if name == '.' or name == '..':
-            return self.getattr(parrent_ino) #FIXME
+            return self.getattr(parrent_ino)
         else:
             try:
                 node = self.nodecache[parrent_ino].children_as_dict[name]
                 return self.entrycache[node.inode]
             except KeyError:
                 raise llfuse.FUSEError(errno.ENOENT)
+
+    def forget(self, inode, lookup):
+        pass
 
     def open(self, inode, flags):
         node = self.nodecache[inode]
