@@ -55,7 +55,7 @@ def mount_manifest(manifest_path, mountpoint_path):
         datastore)
 
     llfuse.init(operations, mountpoint_path, [])
-    llfuse.main(single=False)
+    llfuse.main(single=True)
     llfuse.close()
 
 def diff(file_a, file_b):
