@@ -6,5 +6,5 @@ setup (
     name='MarvinFilesystem',
     version='0.1',
     packages=['mfs','mfs/manifest'],
-    scripts=['mfsserver.py','mfsclient.py','mfsmanager.py']
+    scripts=['mfsserver','mfsclient','mfsmanager']
 )

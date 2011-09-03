@@ -1,0 +1,4 @@
+[datastore]
+url = file:///mnt/datastoe
+[repository]
+url = file:///root/mfs-repository
