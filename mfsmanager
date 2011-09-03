@@ -17,10 +17,23 @@ def export_files(manifest_path, destination_path, export_type, config):
     manifest = mfs.manifest.serializer.fromXML(manifest_path)
     manifest.export(destination_path, datastore, export_type)
 
-def import_files(path):
+def import_files(path, dest):
     """traveres through given path and creates a manifest"""
+    print "reading files from %s" % path
     manifest = mfs.manifest.serializer.fromPath(path)
-    print lxml.etree.tostring(manifest.toXML(), pretty_print=True)
+    print "generating xml"
+    xml = lxml.etree.ElementTree(manifest.toXML())
+    print "saving xml to" % dest
+    xml.write(dest, pretty_print=True)
+    
+
+    datastore = mfs.datastore.Datastore(config.datastore)
+    for node in manifest:
+        if (isinstance (node, mfs.manifest.nodes.File)
+            and not datastore.contains(node)):
+            print "saving in datastore: {0}".format(source + node.path)
+            datastore.saveData(node, source + node.path)
+
 
 def datastore_cleanup(manifests):
     """removes all files that are not in the manifest files provied as an argument"""
@@ -133,9 +146,9 @@ if __name__ == "__main__":
 
     if (action == "import"):
         try:
-            import_files(arguments[0])
+            import_files(arguments[0], arguments[1])
         except IndexError:
-            print "usage: {0} import PATH".format(sys.argv[0])
+            print "usage: {0} import PATH XML".format(sys.argv[0])
             sys.exit(1)
 
     if (action == "store"):
