@@ -102,7 +102,7 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         node = File(name, stats)
         #FIXME into constructor
         node.orig_inode = orig_stats.st_ino
-        hl = hashlib.sha256()
+        hl = hashlib.sha1()
         fobj = open(path, 'r')
         while True:
             data = fobj.read(16 * 4096)
