@@ -22,17 +22,17 @@ def import_files(path, dest):
     print "reading files from %s" % path
     manifest = mfs.manifest.serializer.fromPath(path)
     print "generating xml"
-    xml = lxml.etree.ElementTree(manifest.toXML())
-    print "saving xml to" % dest
+    xml = manifest.toXML()
+    print "saving xml to %s" % dest
     xml.write(dest, pretty_print=True)
     
 
+    print "filling datastore"
     datastore = mfs.datastore.Datastore(config.datastore)
     for node in manifest:
         if (isinstance (node, mfs.manifest.nodes.File)
             and not datastore.contains(node)):
-            print "saving in datastore: {0}".format(source + node.path)
-            datastore.saveData(node, source + node.path)
+            datastore.saveData(node, path + node.path)
 
 
 def datastore_cleanup(manifests):
@@ -79,7 +79,7 @@ def diff(file_a, file_b):
         print line
 
 
-def datastore_store(manifest_path):
+def datastore_store(source, manifest_path):
     """stores all files specified in the manifest in the provided datastore location"""
     manifest = mfs.manifest.serializer.fromXML(config.datastore)
     datastore = mfs.datastore.Datastore(config.datastore)
