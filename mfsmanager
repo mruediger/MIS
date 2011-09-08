@@ -9,6 +9,13 @@ import logging
 
 import mfs
 
+def merge(manifest_path_a, manifest_path_b, manifest_path_dest):
+    manfest_a = mfs.manifest.serializer.fromXML(manfest_path_a)
+    manfest_b = mfs.manifest.serializer.fromXML(manfest_path_b)
+
+    manifest_dest = manifest_a + manifest_b
+    xml = manifest_dest.toXML()
+    xml.write(manifest_path_dest, pretty_print=True)
 
 def export_files(manifest_path, destination_path, export_type, config):
     """creates all files form the manifest in the provided directory"""
@@ -109,6 +116,7 @@ if __name__ == "__main__":
     help_message += """\n   fsck   : check the datastore for file corruption"""
     help_message += """\n   diff   : compare two manifest files"""
     help_message += """\n   mount  : mount manifest to mountpoint"""
+    help_message += """\n   merge  : merge two manifests"""
 
     config    = None
     action    = None
@@ -183,6 +191,14 @@ if __name__ == "__main__":
             mount_manifest(
                 manifest_path = arguments[0],
                 mountpoint_path = arguments[1])
-        except IndexError as e:
-            print e
+        except IndexError:
             print "usage {0} mount MANIFEST MOUNTPOINT".format(sys.argv[0])
+
+    if (action == "merge"):
+        try:
+            merge(
+                manifest_path_a = arguments[0],
+                manifest_path_b = arguments[1],
+                manifest_path_dest = arguments[3])
+        except IndexError:
+            print "usage {0} merge MANIFEST_A MANITEST_B OUTPUT".format(sys.argv[0])
