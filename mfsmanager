@@ -199,6 +199,6 @@ if __name__ == "__main__":
             merge(
                 manifest_path_a = arguments[0],
                 manifest_path_b = arguments[1],
-                manifest_path_dest = arguments[3])
+                manifest_path_dest = arguments[2])
         except IndexError:
             print "usage {0} merge MANIFEST_A MANITEST_B OUTPUT".format(sys.argv[0])
