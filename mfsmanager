@@ -10,8 +10,8 @@ import logging
 import mfs
 
 def merge(manifest_path_a, manifest_path_b, manifest_path_dest):
-    manfest_a = mfs.manifest.serializer.fromXML(manifest_path_a)
-    manfest_b = mfs.manifest.serializer.fromXML(manifest_path_b)
+    manifest_a = mfs.manifest.serializer.fromXML(manifest_path_a)
+    manifest_b = mfs.manifest.serializer.fromXML(manifest_path_b)
 
     manifest_dest = manifest_a + manifest_b
     xml = manifest_dest.toXML()
