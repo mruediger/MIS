@@ -526,6 +526,12 @@ class DeleteNode(Node):
             return str(self.parent) + '/' + self.name + '(delnode)'
         else:
             return '/' + self.name + '(delnode)'
+
+    def toXML(self):
+        xml = etree.Element("file")
+        xml.attrib["name"] = self.name
+        xml.attrib["type"] = "DeleteNode"
+        return xml
     
     def export(self, datastore, exporter):
         exporter.handleWhiteout(self) 
