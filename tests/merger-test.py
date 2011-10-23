@@ -100,7 +100,7 @@ class MergerTest(unittest.TestCase):
     def testSubtractEmptyDir(self):
         newroot = Directory("orig")
         new = Manifest(newroot)
-        target = self.orig - new
+        target = new - self.orig
 
         self.assertFalse(target == self.orig)
 
@@ -126,14 +126,14 @@ class MergerTest(unittest.TestCase):
         new = Manifest(newroot)
 
         self.assertFalse(self.orig.node_by_path('orig/testdir/another_dir/deep_file') is None)
-        target = self.orig - new
+        target = new - self.orig
 
 
         self.assertFalse(target.node_by_path('/testdir') is None)
         self.assertFalse(target.node_by_path('/testdir/another_dir/deep_file') is None)
 
         deep_file.addTo(another_dir)
-        target = self.orig - new
+        target = new - self.orig
 
         self.assertTrue(target.node_by_path('/testdir') is None)
 
@@ -150,13 +150,20 @@ class MergerTest(unittest.TestCase):
         another_dir._children = list()
 
         #check if only the file removed from new remains in target
-        target = self.orig - new
+        target = new - self.orig
         self.assertTrue(1, len(target.root._children))
         testdir = target.root.children_as_dict['testdir']
         self.assertTrue(1, len(testdir._children))
         another_dir = testdir.children_as_dict['another_dir']
         self.assertTrue(1, len(another_dir._children))
         self.assertTrue(isinstance(another_dir.children_as_dict['deep_file'], RMNode))
+
+    def testAddAndSub(self):
+        new = copy(self.orig)
+        new.root.name = "test" #prevent removal of root
+        test = (new - self.orig) + self.orig
+        test.root.name = "orig" #reset name
+        self.assertEquals( test , self.orig)
 
     def testHistory(self):
         new = copy(self.orig)
