@@ -8,7 +8,7 @@ import stat
 from StringIO import StringIO
 from lxml import etree
 
-from mfs.manifest.nodes import Directory,File,DeleteNode,Manifest
+from mfs.manifest.nodes import Directory,File,WhiteoutNode,Manifest
 
 class TestManifest(unittest.TestCase):
 
@@ -33,7 +33,7 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(stat.S_ISREG(childdict['testdir'].children_as_dict['deeper_file'].stats.st_mode))
         self.assertEquals(os.stat('tmp/testdir/mixer-testdev').st_rdev, childdict['mixer-testdev'].rdev)
 
-        self.assertTrue(isinstance(manifest.root.children_as_dict['testfile_a'], DeleteNode))
+        self.assertTrue(isinstance(manifest.root.children_as_dict['testfile_a'], WhiteoutNode))
         #self.assertEquals('another_file', childdict['testdir']._whiteouts[0].name)
 
     def testToXML(self):

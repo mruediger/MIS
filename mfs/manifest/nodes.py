@@ -520,7 +520,7 @@ class File(Node):
 
         self.stats.export(exporter.getPath(self))
 
-class DeleteNode(Node):
+class WhiteoutNode(Node):
     #TODO rename to whiteout node
 
     __slots__ = [
@@ -537,7 +537,7 @@ class DeleteNode(Node):
     def toXML(self):
         xml = etree.Element("file")
         xml.attrib["name"] = self.name
-        xml.attrib["type"] = "DeleteNode"
+        xml.attrib["type"] = "WhiteoutNode"
         return xml
     
     def export(self, datastore, exporter):

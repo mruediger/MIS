@@ -207,7 +207,7 @@ class TestExport(unittest.TestCase):
             testfile.addTo(directory)
             testfile.hash = node.hash
             if (n == 2 or n == 4):
-                DeleteNode("file" + str(n)).addTo(directory)
+                WhiteoutNode("file" + str(n)).addTo(directory)
 
         manifest = Manifest(directory)
         manifest.export(self.tmpdir, self.datastore)      

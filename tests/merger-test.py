@@ -4,7 +4,7 @@ import unittest
 
 from copy import copy
 
-from mfs.manifest.nodes import Directory, File, Manifest, DeleteNode, RMNode
+from mfs.manifest.nodes import Directory, File, Manifest, WhiteoutNode, RMNode
 from mfs.manifest.merge import merge
 
 
@@ -86,16 +86,16 @@ class MergerTest(unittest.TestCase):
     def testWhiteouts(self):
         """test merge of manifests containing whiteouts"""
         newroot = Directory('testdir')
-        DeleteNode("testfile_a").addTo(newroot)
-        DeleteNode("testfile_b").addTo(newroot)
-        DeleteNode("testfile_a").addTo(self.orig.root)
+        WhiteoutNode("testfile_a").addTo(newroot)
+        WhiteoutNode("testfile_b").addTo(newroot)
+        WhiteoutNode("testfile_a").addTo(self.orig.root)
 
         target = self.orig + Manifest(newroot)
 
         self.assertTrue("testfile_b" in target.root.children_as_dict)
         self.assertTrue("testfile_a" in target.root.children_as_dict)
-        self.assertTrue(isinstance(target.root.children_as_dict["testfile_a"], DeleteNode))
-        self.assertTrue(isinstance(target.root.children_as_dict["testfile_b"], DeleteNode))
+        self.assertTrue(isinstance(target.root.children_as_dict["testfile_a"], WhiteoutNode))
+        self.assertTrue(isinstance(target.root.children_as_dict["testfile_b"], WhiteoutNode))
 
     def testSubtractEmptyDir(self):
         newroot = Directory("orig")
