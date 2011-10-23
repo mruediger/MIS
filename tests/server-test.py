@@ -4,6 +4,7 @@ import pickle
 from mfs.server import MFSServer
 from mfs.repository import MemRepository,FileRepository
 from mfs.manifest.nodes import Directory,File,Manifest
+from mfs.autopatcher import Autopatcher
 
 class MFSServerTest(unittest.TestCase):
     
@@ -12,7 +13,8 @@ class MFSServerTest(unittest.TestCase):
         File("testfile-1").addTo(root)
         File("testfile-2").addTo(root)
         self.manifest = Manifest(root)
-        self.server = MFSServer(MemRepository())
+        self.patcher = Autopatcher('tmp/autopatcher')
+        self.server = MFSServer(MemRepository(), self.patcher, None)
         self.server.repository.addXML("debian-1.xml")
         self.server.repository.addXML("debian-1.1.xml",self.manifest)
 
@@ -27,5 +29,5 @@ class MFSServerTest(unittest.TestCase):
         self.assertEquals(self.manifest, manifest)
 
     def testGetFileStore(self):
-        server = MFSServer(FileRepository('tmp/repository'))
+        server = MFSServer(FileRepository('tmp/repository'), self.patcher, None)
         manfest = pickle.loads(server.getManifest('testdir'))

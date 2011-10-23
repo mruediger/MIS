@@ -25,8 +25,8 @@ class TestDiff(unittest.TestCase):
         
         #nodes
         new_manifest.root.name = "123"
-        self.assertEquals('/ != /123 (name: ,123)', self.manifest.diff(new_manifest)[0])
-        new_manifest.root.name  = ""
+        self.assertEquals('/ != 123 (name: /,123)', self.manifest.diff(new_manifest)[0])
+        new_manifest.root.name  = "/"
 
         #stats
         new_manifest.root.stats.st_gid = "0"

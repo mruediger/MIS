@@ -168,6 +168,8 @@ class Node(object):
     def __init__(self, name, stats=None):
         if (name is None):
             raise ValueError
+        if (name == ""):
+            name = '/'
         self.name = name
         if not stats: stats = Stats()
         self.stats = stats
