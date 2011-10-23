@@ -26,12 +26,12 @@ class MFSServer(object):
 
     def getManifest(self, name, version=None):
         manifest = self.repository.getManifest(name, version)
-        if self.autopatcher and self.datastore:
-            for filename in self.autopatcher.listFiles():
-               node = manifest.node_by_path(filename)
-               if node is not None and isinstance(node, File):
-                    idx = node.parent._children.index(node)
-                    del node.parent._children[idx]
-                    content = self.autopatcher.getContent(filename, self.datastore.getURL(node))
-                    node.parent._children.append(PatchNode(node,content))
+        for filename in self.autopatcher.listFiles():
+           node = manifest.node_by_path(filename)
+           if node is not None and isinstance(node, File):
+                idx = node.parent._children.index(node)
+                content = self.autopatcher.getContent(
+                    filename, 
+                    self.datastore.getURL(node))
+                node.parent._children[idx] = PatchNode(node,content)
         return pickle.dumps(manifest)
