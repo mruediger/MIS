@@ -189,7 +189,10 @@ class Node(object):
             return copy(self)
 
     def __sub__(self, node):
-        pass
+        if (self == node):
+            return None
+        else:
+            return copy(self)
 
     def diff(self, node):
         retval = list()
@@ -230,8 +233,6 @@ class Node(object):
             #children may differ in order
             if (key == '_children') : continue
 
-            #time may differ slightly
-            if (key.endswith('time')) : continue
             if not getattr(self, key, None) == getattr(node, key, None):
                 return False
 
@@ -394,7 +395,7 @@ class Directory(Node):
         if (self == node):
             return None
 
-        retval = copy(node)
+        retval = copy(self)
 
         snodes = self.children_as_dict
         nnodes = node.children_as_dict
