@@ -131,6 +131,9 @@ class Stats(object):
     def __str__(self):
         return str().join([slot + ":" + str(getattr(self,slot,None)) + '\n' for slot in self.__slots__])
 
+    def isNewerThan(self, stats):
+        return self.st_mtime > stats.st_mtime 
+
     def toXML(self):
         xml = etree.Element("stats")
         for key in filter(lambda x: x.startswith("st_"), self.__slots__):
@@ -250,6 +253,8 @@ class Node(object):
     def __deepcopy__(self, memo):
         return self.__copy__()
 
+    def isNewerThan(self, node):
+        self.stats.isNewerThan(node.stats)
 
     def export(self, datastore, exporter):
         raise Exception("Node Objects cannot be exported")
@@ -344,7 +349,10 @@ class Directory(Node):
         return self._children[i]    
 
     def __add__(self, node):
-        retval = copy(node)
+        if node.isNewerThan(self):
+            retval = copy(node)
+        else:
+            retval = copy(self)
 
         snodes = self.children_as_dict
         nnodes = node.children_as_dict
