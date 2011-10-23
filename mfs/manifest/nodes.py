@@ -344,7 +344,6 @@ class Directory(Node):
         return self._children[i]    
 
     def __add__(self, node):
-        #FIXME: itertools oder filter/map benutzen
         retval = copy(node)
 
         snodes = self.children_as_dict
@@ -505,11 +504,11 @@ class File(Node):
             else:
                 exporter.linkcache[self.orig_inode] = exporter.getPath(self)
 
-        sparsefile = ( self.stats.st_size > 
+        is_sparsefile = ( self.stats.st_size > 
             ( self.stats.st_blocks * self.stats.st_blksize ))
 
         mfs.fileops.copy(datastore.getURL(self), exporter.getPath(self), 
-            sparsefile, self.stats.st_blksize, self.stats.st_size)
+            is_sparsefile, self.stats.st_blksize, self.stats.st_size)
 
         self.stats.export(exporter.getPath(self))
 
@@ -536,7 +535,7 @@ class PatchNode(Node):
 
     __slots__ = Node.__slots__ + [ "node","content" ]
 
-    def __init__(self, node, content):
+    def __init__(self, node, content):        
         Node.__init__(self, node.name)
         self.node = node
         self.content = content

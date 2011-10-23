@@ -61,9 +61,11 @@ class Operations(llfuse.Operations):
         entry.generation    = 1
         entry.st_rdev = node.rdev
 
+        #metadata copy
         for attr in filter(lambda x: x.startswith('st_'), node.stats.__slots__):
             setattr(entry, attr, getattr(node.stats, attr))
-
+    
+        #hardlink detection
         if (isinstance(node, mfs.manifest.nodes.File) and node.stats.st_nlink > 1):
             if(not self.hardlinks.has_key(node.orig_inode)):
                 self.hardlinks[node.orig_inode] = self.highest_inode
@@ -74,6 +76,7 @@ class Operations(llfuse.Operations):
         node.inode = self.highest_inode
         self.highest_inode += 1
 
+        #update filesystem stats
         self.fstat.f_blocks += int(entry.st_blocks)
         self.fstat.f_files += 1
 
