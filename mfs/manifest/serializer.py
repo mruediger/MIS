@@ -13,6 +13,11 @@ import hashlib
 
 from mfs.manifest.nodes import *
 
+class NullNode(object):
+
+    def addTo(self, directory):
+	pass
+
 def fromPath(path, datastore=None):
     """
     traverses through path and creates a manifest object
@@ -97,7 +102,7 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         node = File(name, stats)
         #FIXME into constructor
         node.orig_inode = orig_stats.st_ino
-        hl = hashlib.sha256()
+        hl = hashlib.sha1()
         fobj = open(path, 'r')
         while True:
             data = fobj.read(16 * 4096)
@@ -110,6 +115,7 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         if (datastore is not None):
             datastore.saveData(node, path)
         return node
+
         
     if stat.S_ISDIR(stats.st_mode):
         node = Directory(name, stats)
@@ -131,3 +137,6 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
 
     if stat.S_ISFIFO(stats.st_mode):
         return FIFO(name, stats)
+
+    
+    return NullNode()

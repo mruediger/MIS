@@ -92,9 +92,10 @@ class MergerTest(unittest.TestCase):
 
         target = self.orig + Manifest(newroot)
 
-        #self.assertEquals(2, len(target.root._whiteouts))
-        #self.assertEquals("testfile_a", list(target.root._whiteouts)[0].name)
-        #self.assertEquals("testfile_b", list(target.root._whiteouts)[1].name)
+        self.assertTrue("testfile_b" in target.root.children_as_dict)
+        self.assertTrue("testfile_a" in target.root.children_as_dict)
+        self.assertTrue(isinstance(target.root.children_as_dict["testfile_a"], DeleteNode))
+        self.assertTrue(isinstance(target.root.children_as_dict["testfile_b"], DeleteNode))
 
     def testSubtractEmptyDir(self):
         newroot = Directory("orig")

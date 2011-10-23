@@ -9,6 +9,13 @@ import logging
 
 import mfs
 
+def merge(manifest_path_a, manifest_path_b, manifest_path_dest):
+    manifest_a = mfs.manifest.serializer.fromXML(manifest_path_a)
+    manifest_b = mfs.manifest.serializer.fromXML(manifest_path_b)
+
+    manifest_dest = manifest_a + manifest_b
+    xml = manifest_dest.toXML()
+    xml.write(manifest_path_dest, pretty_print=True)
 
 def export_files(manifest_path, destination_path, export_type, config):
     """creates all files form the manifest in the provided directory"""
@@ -17,10 +24,23 @@ def export_files(manifest_path, destination_path, export_type, config):
     manifest = mfs.manifest.serializer.fromXML(manifest_path)
     manifest.export(destination_path, datastore, export_type)
 
-def import_files(path):
+def import_files(path, dest):
     """traveres through given path and creates a manifest"""
+    print "reading files from %s" % path
     manifest = mfs.manifest.serializer.fromPath(path)
-    print lxml.etree.tostring(manifest.toXML(), pretty_print=True)
+    print "generating xml"
+    xml = manifest.toXML()
+    print "saving xml to %s" % dest
+    xml.write(dest, pretty_print=True)
+    
+
+    print "filling datastore"
+    datastore = mfs.datastore.Datastore(config.datastore)
+    for node in manifest:
+        if (isinstance (node, mfs.manifest.nodes.File)
+            and not datastore.contains(node)):
+            datastore.saveData(node, path + node.path)
+
 
 def datastore_cleanup(manifests):
     """removes all files that are not in the manifest files provied as an argument"""
@@ -66,7 +86,7 @@ def diff(file_a, file_b):
         print line
 
 
-def datastore_store(manifest_path):
+def datastore_store(source, manifest_path):
     """stores all files specified in the manifest in the provided datastore location"""
     manifest = mfs.manifest.serializer.fromXML(config.datastore)
     datastore = mfs.datastore.Datastore(config.datastore)
@@ -96,6 +116,7 @@ if __name__ == "__main__":
     help_message += """\n   fsck   : check the datastore for file corruption"""
     help_message += """\n   diff   : compare two manifest files"""
     help_message += """\n   mount  : mount manifest to mountpoint"""
+    help_message += """\n   merge  : merge two manifests"""
 
     config    = None
     action    = None
@@ -133,9 +154,9 @@ if __name__ == "__main__":
 
     if (action == "import"):
         try:
-            import_files(arguments[0])
+            import_files(arguments[0], arguments[1])
         except IndexError:
-            print "usage: {0} import PATH".format(sys.argv[0])
+            print "usage: {0} import PATH XML".format(sys.argv[0])
             sys.exit(1)
 
     if (action == "store"):
@@ -170,6 +191,14 @@ if __name__ == "__main__":
             mount_manifest(
                 manifest_path = arguments[0],
                 mountpoint_path = arguments[1])
-        except IndexError as e:
-            print e
+        except IndexError:
             print "usage {0} mount MANIFEST MOUNTPOINT".format(sys.argv[0])
+
+    if (action == "merge"):
+        try:
+            merge(
+                manifest_path_a = arguments[0],
+                manifest_path_b = arguments[1],
+                manifest_path_dest = arguments[2])
+        except IndexError:
+            print "usage {0} merge MANIFEST_A MANITEST_B OUTPUT".format(sys.argv[0])

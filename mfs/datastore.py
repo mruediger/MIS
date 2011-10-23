@@ -21,8 +21,7 @@ class Datastore(object):
         fobj = open(path, 'rb')
 
         if not node.hash:
-            #TODO why sha256?
-            hl = hashlib.sha256()
+            hl = hashlib.sha1()
         
             while True:
                 data = fobj.read(1024 * 1024)
@@ -75,7 +74,7 @@ class Datastore(object):
 
     def check(self, filehash):
         with open(self.toPath(filehash), 'rb') as f:
-            hl = hashlib.sha256()
+            hl = hashlib.sha1()
             while True:
                 data = f.read(16 * 4096)
                 if not data: break
