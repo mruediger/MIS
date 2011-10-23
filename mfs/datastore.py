@@ -52,7 +52,6 @@ class Datastore(object):
 
         dest.truncate()
         dest.close()
-
         fobj.close()
 
     def getURL(self, node):
