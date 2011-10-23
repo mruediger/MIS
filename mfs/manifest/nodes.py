@@ -413,7 +413,7 @@ class Directory(Node):
             elif nnode:
                 newchild = RMNode(deepcopy(nnode))
             else:
-                newchild = snode
+                newchild = deepcopy(snode)
 
             if newchild:
                 newchild.addTo(retval)
