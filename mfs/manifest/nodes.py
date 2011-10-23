@@ -183,7 +183,10 @@ class Node(object):
             setattr(self, self.__slots__[i], state[i])
             
     def __add__(self, node):
-        return copy(node)
+        if node.isNewerThan(self):
+            return copy(node)
+        else:
+            return copy(self)
 
     def __sub__(self, node):
         pass
@@ -300,7 +303,6 @@ class SymbolicLink(Node):
             #not a real error
             #print "symlink: {0}: {1}".format(exporter.getPath(self), strerror)
             return
-
 
 class Device(Node):
 
@@ -523,7 +525,6 @@ class File(Node):
         self.stats.export(exporter.getPath(self))
 
 class WhiteoutNode(Node):
-    #TODO rename to whiteout node
 
     __slots__ = [
         'name',
@@ -535,6 +536,12 @@ class WhiteoutNode(Node):
             return str(self.parent) + '/' + self.name + '(delnode)'
         else:
             return '/' + self.name + '(delnode)'
+
+    def isNewerThan(self, node):
+        return True
+
+    def __add__(self, node):
+        return copy(node)
 
     def toXML(self):
         xml = etree.Element("file")
