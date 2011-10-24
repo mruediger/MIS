@@ -1,7 +1,8 @@
 import os
-import hashlib
 import tempfile
 from urlparse import urlparse, urlsplit, urljoin
+
+import fileops
 
 class Datastore(object):
 
@@ -18,17 +19,9 @@ class Datastore(object):
         if (not os.path.exists(path)):
             raise ValueError("file does not exist")
 
-        fobj = open(path, 'rb')
 
         if not node.hash:
-            hl = hashlib.sha1()
-        
-            while True:
-                data = fobj.read(1024 * 1024)
-                if not data: break
-                hl.update(data)
-
-            node.hash = hl.hexdigest()
+            node.hash = fileops.hash(path)
 
         destdir  = self.path + '/' + node.hash[:2]
         destfile = destdir   + '/' + node.hash[2:]
@@ -37,7 +30,7 @@ class Datastore(object):
             os.makedirs(destdir)
 
         dest = file(destfile,'wb')
-        fobj.seek(0)
+        fobj = open(path, 'rb')
 
         #sparsefile handling from a shautil patch
         while True:
@@ -73,12 +66,7 @@ class Datastore(object):
         os.remove(self.toPath(filehash))
 
     def check(self, filehash):
-        with open(self.toPath(filehash), 'rb') as f:
-            hl = hashlib.sha1()
-            while True:
-                data = f.read(16 * 4096)
-                if not data: break
-                hl.update(data)
-            return hl.hexdigest() == filehash
+        return filehash == fileops.hash(
+            self.toPath(filehash))
 
     local = property(lambda self: not ( self.path == None))

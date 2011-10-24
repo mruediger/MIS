@@ -9,29 +9,15 @@ __author__ = 'Mathias Ruediger <ruediger@blueboot.org>'
 
 import os
 import stat
-import hashlib
 
+import fileops
 from mfs.manifest.nodes import *
+
 
 class NullNode(object):
 
     def addTo(self, directory):
 	pass
-
-def fromPath(path, datastore=None):
-    """
-    traverses through path and creates a manifest object
-    @
-    """
-
-    #check if directory contains unionfs
-    if (os.path.exists(path + '/.unionfs')):
-        unionfspath = path + '/.unionfs'
-    else:
-        unionfspath = None
-
-    root = _searchFiles(path, '', datastore, '', unionfspath)
-    return Manifest(root)
 
 def fromXML(xml_file):
     """reads xml file and creates a manifest object"""
@@ -79,8 +65,23 @@ def fromXML(xml_file):
     
     return Manifest(node)
 
+def fromPath(path, datastore=None):
+    """
+    traverses through path and creates a manifest object
+    @
+    """
+
+    #check if directory contains unionfs
+    if (os.path.exists(path + '/.unionfs')):
+        unionfspath = path + '/.unionfs'
+    else:
+        unionfspath = None
+
+    root = _searchFiles(path, '', datastore, '', unionfspath)
+    return Manifest(root)
+
 def _searchFiles(root, subpath, datastore, name, unionfspath):
-    #the root + subpath split is needed for unionfs check
+    #the root + subpath split is needed for the childpath creation
     path = root + subpath 
     orig_stats = os.lstat(path)
     stats = Stats(orig_stats)
@@ -94,24 +95,10 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         if name.startswith(".wh."):
             return WhiteoutNode(name[4:], stats)
 
-        # FIXME unionfs disabled
-        #if (unionfspath and os.path.exists(unionfspath + subpath)
-        #    and not os.path.isdir(unionfspath + subpath)):
-        #    return WhiteoutNode(name)
-        
         node = File(name, stats)
-        #FIXME into constructor
         node.orig_inode = orig_stats.st_ino
-        hl = hashlib.sha1()
-        fobj = open(path, 'r')
-        while True:
-            data = fobj.read(16 * 4096)
-            if not data: break
-            hl.update(data)
-
-        node.hash = hl.hexdigest()
-
-
+        node.hash = fileops.hash(path)
+       
         if (datastore is not None):
             datastore.saveData(node, path)
         return node

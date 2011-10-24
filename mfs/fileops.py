@@ -11,11 +11,18 @@ everything done with real file happenes here"""
 #TODO options for sparse file handling?
 
 import os
+import hashlib
 from urllib2 import urlopen
 
 def hash(url):
     """reads the file and generates a hash"""
-    pass
+    hl = hashlib.sha1()
+    with open(path, rb) as fdst:
+        while True:
+             data = f.read(16 * 4096)
+             if not data: break
+             hl.update(data)
+    return hl.hexdigest() 
 
 def copy(src_url, dest_filename, sparsefile=False, blksize=(16*4096), filesize=None):
     fsrc = urlopen (src_url, 'rb')
