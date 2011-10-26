@@ -46,9 +46,9 @@ if __name__ == "__main__":
     help_message = """usage {0}: CONFIGFILE HOSTURL ACTION""".format(sys.argv[0])
     help_message += """\navailable commands are:"""
     help_message += """\n   versions : list versions of manifests"""
-    help_message += """\n   print    : prints the latest manifest if version is omitted"""
-    help_message += """\n   pull     : pulls a image into the specified folder"""
-    help_message += """\n   update   : applies changes to the image in the specified folder"""
+    help_message += """\n   print    : prints the specified manifest"""
+    help_message += """\n   pull     : pulls an image into the specified folder"""
+    help_message += """\n   update   : applies changes to the the specified folder"""
 
     try:
         with open(sys.argv[1]) as configfile:

@@ -18,10 +18,10 @@ class Autopatcher(object):
     def listFiles(self):
         return self.scripts.keys()
 
-    def getContent(self, filename, url):
+    def getContent(self, filename, url, patchargs=[]):
         scriptname = self.scripts[filename]
         process = subprocess.Popen(
-            [scriptname, url], 
+            [scriptname, url] + patchargs, 
             shell=False, 
             stdout=subprocess.PIPE, 
             stderr=subprocess.PIPE)

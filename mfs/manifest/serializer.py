@@ -10,7 +10,7 @@ __author__ = 'Mathias Ruediger <ruediger@blueboot.org>'
 import os
 import stat
 
-import fileops
+import mfs.fileops as fileops
 from mfs.manifest.nodes import *
 
 
@@ -26,7 +26,6 @@ def fromXML(xml_file):
     for action, element in etree.iterparse(xml_file, events=("start","end")):
         if (action == "start"):
             if (element.tag == "file"):
-                #FIXME USE A FACTORY HERE!!!
                 parent = node
                 node = eval(element.get("type"))(element.get("name"))
 
