@@ -24,7 +24,7 @@ class Datastore(object):
             node.hash = fileops.hash(path)
 
         destdir  = self.path + '/' + node.hash[:2]
-        destfile = destdir   + '/' + node.hash[2:]
+        destfile = self.toPath(node) 
 
         if (not os.path.exists(destdir)):
             os.makedirs(destdir)
@@ -47,25 +47,32 @@ class Datastore(object):
         fobj.close()
 
     def getURL(self, node):
-        return urljoin(self.url.geturl(), self.toPath(node.hash))
+        return urljoin(self.url.geturl(), self.toPath(node))
 
     def contents(self):
         retval = list()
         for dirname in os.listdir(self.path):
             for filename in os.listdir(self.path + '/' + dirname):
-                retval.append(dirname + filename)
+                filehash = dirname + filename[:38]
+                filesize = filename[39:]
+                retval.append((filehash , filesize))
         return retval
 
     def contains(self, node):
         return os.path.exists(self.toPath(node.hash))
 
-    def toPath(self, filehash):
-        return self.path + '/' + filehash[:2] + '/' + filehash[2:]
+    def toPath(self, node):
+        filehash = node.hash
+        filesize = str(node.stats.st_size)
+        return self.toPath2(filehash, filesize)
 
-    def remove(self, filehash):
-        os.remove(self.toPath(filehash))
+    def toPath2(self, filehash, filesize):
+        return self.path + '/' + filehash[:2] + '/' + filehash[2:] + ':' + filesize
 
-    def check(self, filehash):
+    def remove(self, filehash, filesize):
+        os.remove(self.toPath2(filehash, filesize))
+
+    def check(self, filehash, filesize):
         return filehash == fileops.hash(
             self.toPath(filehash))
 

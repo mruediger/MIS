@@ -49,13 +49,13 @@ def datastore_cleanup(manifests):
 
     for manifest_path in manifests:
         manifest = mfs.manifest.serializer.fromXML(manifest_path)
-        hashes += manifest.get_hashes()
+        nodes += manifest.get_hashes()
 
     datastore = mfs.datastore.Datastore(config.datastore)
 
     todel = set(datastore.contents()) - set(hashes)
-    for filehash in todel:
-        print "removing " + datastore.toPath(filehash)
+    for node in todel:
+        print "removing " + datastore.toPath(node)
         datastore.remove(filehash)
 
 def mount_manifest(manifest_path, mountpoint_path):
@@ -101,9 +101,9 @@ def datastore_fsck(datastore_path):
     """checks the files in the datastore for consistency"""
     datastore = mfs.datastore.Datastore(datastore_path)
 
-    for filehash in datastore.contents():
-        if not datastore.check(filehash):
-            print "error in " + filehash
+    for filehash, filesize in datastore.contents():
+        if not datastore.check(filehash, filesize):
+            print "error in " + filehash + ':' + filesize
 
 if __name__ == "__main__":
     

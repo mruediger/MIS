@@ -38,3 +38,20 @@ class DatastoreTest(unittest.TestCase):
 
         os.remove(tmpfile)
         shutil.rmtree(tmpdir)
+
+    def testCheckDatastore(self):
+        (num, tmpfile) = tempfile.mkstemp()
+        node = File(tmpfile)
+        file(tmpfile, 'w').write("testcontent")
+        node.stats = Stats(os.stat(tmpfile))
+
+        tmpdir = tempfile.mkdtemp()
+        datastore = Datastore(tmpdir)
+        datastore.saveData(node, tmpfile)   
+        
+        filehash , filesize = datastore.contents()[0]
+        self.assertEquals(filehash, node.hash)
+        self.assertEquals(filesize, str(node.stats.st_size))
+        
+        os.remove(tmpfile)
+        shutil.rmtree(tmpdir)

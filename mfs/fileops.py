@@ -14,14 +14,15 @@ import os
 import hashlib
 from urllib2 import urlopen
 
-def hash(url):
+def hash(path):
     """reads the file and generates a hash"""
     hl = hashlib.sha1()
-    with open(path, rb) as fdst:
+    with open(path, 'rb') as fsrc:
         while True:
-             data = f.read(16 * 4096)
+             data = fsrc.read(16 * 4096)
              if not data: break
              hl.update(data)
+        fsrc.close()
     return hl.hexdigest() 
 
 def copy(src_url, dest_filename, sparsefile=False, blksize=(16*4096), filesize=None):

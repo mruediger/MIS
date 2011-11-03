@@ -65,7 +65,7 @@ class Manifest(object):
         for child in self.root:
             hash = getattr(child, "hash", None)
             if hash:
-                hashes.append(hash)
+                hashes.append( (hash,child.stats.st_size) )
         return hashes
 
     def __copy__(self):

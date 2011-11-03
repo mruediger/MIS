@@ -92,8 +92,11 @@ class Operations(llfuse.Operations):
             yield(child.name, self.entrycache[child.inode], off)
 
     def lookup(self, parrent_ino, name):
-        if name == '.' or name == '..':
-            return self.getattr(parrent_ino)
+        if name == '.':
+            return self.entrycache[parrent_ino]
+        if name == '..':
+            parent = self.nodecache[parrent_ino].parent
+            return self.entrycache[parent.inode]
         else:
             try:
                 node = self.nodecache[parrent_ino].children_as_dict[name]
