@@ -29,12 +29,15 @@ class Datastore(object):
         if (not os.path.exists(destdir)):
             os.makedirs(destdir)
 
+        if os.path.exists(destfile):
+            return
+
         dest = file(destfile,'wb')
         fobj = open(path, 'rb')
 
         #sparsefile handling from a shautil patch
         while True:
-            buf = fobj.read(node.stats.st_blksize)
+            buf = fobj.read(512)
             if not buf:
                 break
             if buf == '\0'*len(buf):
@@ -42,9 +45,9 @@ class Datastore(object):
             else:
                 dest.write(buf)
 
+        fobj.close()
         dest.truncate()
         dest.close()
-        fobj.close()
 
     def getURL(self, node):
         return urljoin(self.url.geturl(), self.toPath(node))
