@@ -100,6 +100,8 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
        
         if (datastore is not None):
             datastore.saveData(node, path)
+        else:
+            print "datastore not given"
         return node
 
         
