@@ -111,7 +111,7 @@ class Operations(llfuse.Operations):
         node = self.nodecache[inode]
         if hasattr(node, "hash"):
             self.filecache[inode] = open(self.datastore.toPath(
-                node.hash
+                node
             ))
         return inode
 
