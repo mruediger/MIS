@@ -27,20 +27,12 @@ def export_files(manifest_path, destination_path, export_type, config):
 def import_files(path, dest):
     """traveres through given path and creates a manifest"""
     print "reading files from %s" % path
-    manifest = mfs.manifest.serializer.fromPath(path)
+    datastore = mfs.datastore.Datastore(config.datastore)
+    manifest = mfs.manifest.serializer.fromPath(path, datastore)
     print "generating xml"
     xml = manifest.toXML()
     print "saving xml to %s" % dest
     xml.write(dest, pretty_print=True)
-    
-
-    print "filling datastore"
-    datastore = mfs.datastore.Datastore(config.datastore)
-    for node in manifest:
-        if (isinstance (node, mfs.manifest.nodes.File)
-            and not datastore.contains(node)):
-            datastore.saveData(node, path + node.path)
-
 
 def datastore_cleanup(manifests):
     """removes all files that are not in the manifest files provied as an argument"""
