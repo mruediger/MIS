@@ -41,13 +41,13 @@ def datastore_cleanup(manifests):
 
     for manifest_path in manifests:
         manifest = mfs.manifest.serializer.fromXML(manifest_path)
-        nodes += manifest.get_hashes()
+        hashes += manifest.get_hashes()
 
     datastore = mfs.datastore.Datastore(config.datastore)
 
     todel = set(datastore.contents()) - set(hashes)
     for node in todel:
-        print "removing " + datastore.toPath(node)
+        print "removing " + datastore.getPath(node)
         datastore.remove(filehash)
 
 def mount_manifest(manifest_path, mountpoint_path):

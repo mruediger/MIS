@@ -45,11 +45,11 @@ class Datastore(object):
         dstdir  = self.path + '/' + node.hash[:2]
         dstpath = self.getPath(node) 
 
-        if (not os.path.exists(dstdir)):
-            os.makedirs(dstdir)
-
         if os.path.exists(dstpath):
             return
+
+        if (not os.path.exists(dstdir)):
+            os.makedirs(dstdir)
 
         self.writer.write(srcpath, dstpath)
 
@@ -94,7 +94,7 @@ class SparseWriter(Writer):
         srcfile = open(srcpath, 'rb')
         dstfile = open(dstpath,'wb')
         while True:
-            buf = srcfile.read(16*1024)
+            buf = srcfile.read(4096)
             if not buf:
                 break
             if buf == '\0'*len(buf):
@@ -116,7 +116,8 @@ class GZipWriter(Writer):
 
     def write(self, srcpath, dstpath):
         srcfile = open(srcpath, 'rb')
-        dstfile = gzip.open(dstpath, 'wb', compresslevel=9)
+        dstfile = gzip.open(dstpath, 'wb', 
+            compresslevel=self.level)
         #compression
         while True:
             buf = srcfile.read(16*1024)
