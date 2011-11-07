@@ -12,6 +12,7 @@ everything done with real file happenes here"""
 
 import os
 import hashlib
+import zlib
 from urllib2 import urlopen
 
 def hash(path):
@@ -25,13 +26,16 @@ def hash(path):
         fsrc.close()
     return hl.hexdigest() 
 
-def copy(src_url, dest_filename, sparsefile=False, blksize=(16*4096), filesize=None):
+def copy(src_url, dest_filename, sparsefile=False, compressed=False, blksize=(16*4096), filesize=None):
     fsrc = urlopen (src_url, 'rb')
+    dcobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
     with open(dest_filename, 'wb') as fdst:
         while True:
             buf = fsrc.read(blksize)
             if not buf:
                 break
+            if compressed:
+                buf = dcobj.decompress(buf)
             if sparsefile and buf == '\0'*len(buf):
                 fdst.seek(len(buf), os.SEEK_CUR)
             else:

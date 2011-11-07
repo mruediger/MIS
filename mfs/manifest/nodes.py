@@ -523,7 +523,7 @@ class File(Node):
             ( self.stats.st_blocks * self.stats.st_blksize ))
 
         mfs.fileops.copy(datastore.getURL(self), exporter.getPath(self), 
-            is_sparsefile, self.stats.st_blksize, self.stats.st_size)
+            is_sparsefile, datastore.is_compressed(), self.stats.st_blksize, self.stats.st_size)
 
         self.stats.export(exporter.getPath(self))
 

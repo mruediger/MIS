@@ -9,6 +9,7 @@ from StringIO import StringIO
 from lxml import etree
 
 from mfs.manifest.nodes import Directory,File,WhiteoutNode,Manifest
+from mfs.datastore import Datastore
 
 class TestManifest(unittest.TestCase):
 
@@ -37,7 +38,7 @@ class TestManifest(unittest.TestCase):
         #self.assertEquals('another_file', childdict['testdir']._whiteouts[0].name)
 
     def testToXML(self):
-        datastore = mfs.datastore.Datastore('tmp/datastore')
+        datastore = Datastore('tmp/datastore', Datastore.SPARSE)
         manifest_orig = mfs.manifest.serializer.fromPath('tmp/testdir', datastore)
         xml = etree.tostring(manifest_orig.toXML(), pretty_print=True)
         manifest_new = mfs.manifest.serializer.fromXML(StringIO(xml))
@@ -142,7 +143,7 @@ class TestManifest(unittest.TestCase):
 
         for node in manifest:
             if isinstance(node, File):
-                self.assertTrue(node.hash in hashes)
+                self.assertTrue((node.hash, node.stats.st_size) in hashes)
 
     def testSingleFile(self):
         manifest =  mfs.manifest.serializer.fromXML('tmp/repository/testdir.xml')

@@ -3,54 +3,58 @@ import tempfile
 from urlparse import urlparse, urlsplit, urljoin
 
 import fileops
+import gzip
 
 class Datastore(object):
 
-    def __init__(self, url):
+    SPARSE = 1
+    GZIP1  = 2
+    GZIP6  = 3
+
+    def __init__(self, url, storetype):
         if (url[-1] != '/'):
             url = url + '/'
         self.url = urlparse(url, 'file')
         self.path = self.url.path
+
+        if (storetype == Datastore.SPARSE):
+            self.writer = SparseWriter()
+            return
+
+        if (storetype == Datastore.GZIP1):
+            self.writer = GZipWriter(1)
+            return
+
+        if (storetype == Datastore.GZIP6):
+            self.writer = GZipWriter(6)
+
+    def is_compressed(self):
+        self.writer.is_compressed()
         
-    def saveData(self, node, path):
+    def saveData(self, node, srcpath):
         if (not self.local):
             raise ValueError("cannot save to remote datastores")
 
-        if (not os.path.exists(path)):
+        if (not os.path.exists(srcpath)):
             raise ValueError("file does not exist")
 
 
         if not node.hash:
-            node.hash = fileops.hash(path)
+            node.hash = fileops.hash(srcpath)
 
-        destdir  = self.path + '/' + node.hash[:2]
-        destfile = self.toPath(node) 
+        dstdir  = self.path + '/' + node.hash[:2]
+        dstpath = self.getPath(node) 
 
-        if (not os.path.exists(destdir)):
-            os.makedirs(destdir)
+        if (not os.path.exists(dstdir)):
+            os.makedirs(dstdir)
 
-        if os.path.exists(destfile):
+        if os.path.exists(dstpath):
             return
 
-        dest = file(destfile,'wb')
-        fobj = open(path, 'rb')
-
-        #sparsefile handling from a shautil patch
-        while True:
-            buf = fobj.read(512)
-            if not buf:
-                break
-            if buf == '\0'*len(buf):
-                dest.seek(len(buf), os.SEEK_CUR)
-            else:
-                dest.write(buf)
-
-        fobj.close()
-        dest.truncate()
-        dest.close()
+        self.writer.write(srcpath, dstpath)
 
     def getURL(self, node):
-        return urljoin(self.url.geturl(), self.toPath(node))
+        return urljoin(self.url.geturl(), self.getPath(node))
 
     def contents(self):
         retval = list()
@@ -62,21 +66,66 @@ class Datastore(object):
         return retval
 
     def contains(self, node):
-        return os.path.exists(self.toPath(node.hash))
+        return os.path.exists(self.getPath(node.hash))
 
-    def toPath(self, node):
+    def getPath(self, node):
         filehash = node.hash
         filesize = str(node.stats.st_size)
-        return self.toPath2(filehash, filesize)
+        return self.getPath2(filehash, filesize)
 
-    def toPath2(self, filehash, filesize):
+    def getPath2(self, filehash, filesize):
         return self.path + '/' + filehash[:2] + '/' + filehash[2:] + ':' + filesize
 
     def remove(self, filehash, filesize):
-        os.remove(self.toPath2(filehash, filesize))
+        os.remove(self.getPath2(filehash, filesize))
 
     def check(self, filehash, filesize):
         return filehash == fileops.hash(
-            self.toPath(filehash))
+            self.getPath(filehash))
 
     local = property(lambda self: not ( self.path == None))
+
+class Writer(object):
+    pass
+
+class SparseWriter(Writer):
+    
+    def write(self, srcpath, dstpath):
+        srcfile = open(srcpath, 'rb')
+        dstfile = open(dstpath,'wb')
+        while True:
+            buf = srcfile.read(16*1024)
+            if not buf:
+                break
+            if buf == '\0'*len(buf):
+                dstfile.seek(len(buf), os.SEEK_CUR)
+            else:
+                dstfile.write(buf)
+        
+        srcfile.close()
+        dstfile.truncate()
+        dstfile.close()
+
+    def is_compressed(self):
+        return False
+
+class GZipWriter(Writer):
+    
+    def __init__(self, level):
+        self.level = level
+
+    def write(self, srcpath, dstpath):
+        srcfile = open(srcpath, 'rb')
+        dstfile = gzip.open(dstpath, 'wb', compresslevel=9)
+        #compression
+        while True:
+            buf = srcfile.read(16*1024)
+            if not buf:
+                break
+            dstfile.write(buf)
+
+        srcfile.close()
+        dstfile.close()
+    
+    def is_compressed(self):
+        return True

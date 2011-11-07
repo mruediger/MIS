@@ -15,7 +15,7 @@ class TestExport(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.datastore = Datastore(tempfile.mkdtemp())
+        self.datastore = Datastore(tempfile.mkdtemp(), Datastore.SPARSE)
     
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
