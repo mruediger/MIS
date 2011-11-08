@@ -29,7 +29,7 @@ class Datastore(object):
             self.writer = GZipWriter(6)
 
     def is_compressed(self):
-        self.writer.is_compressed()
+        return self.writer.is_compressed()
         
     def saveData(self, node, srcpath):
         if (not self.local):
@@ -66,7 +66,7 @@ class Datastore(object):
         return retval
 
     def contains(self, node):
-        return os.path.exists(self.getPath(node.hash))
+        return os.path.exists(self.getPath(node))
 
     def getPath(self, node):
         filehash = node.hash
@@ -81,7 +81,8 @@ class Datastore(object):
 
     def check(self, filehash, filesize):
         return filehash == fileops.hash(
-            self.getPath(filehash))
+            self.getPath2(filehash, filesize),
+            self.is_compressed())
 
     local = property(lambda self: not ( self.path == None))
 

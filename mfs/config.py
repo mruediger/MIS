@@ -1,4 +1,8 @@
 import ConfigParser
+from mfs.datastore import Datastore
+
+class DatastoreConfig(object):
+    pass
 
 class Config(object):
     
@@ -7,10 +11,14 @@ class Config(object):
         self.config.readfp(fp)
     
     def getDatastore(self):
-        return self.config.get('datastore','url')
+        retval = DatastoreConfig()
+        retval.url = self.config.get('datastore','url')
+        retval.type = eval("Datastore." + self.config.get('datastore','type'))
+        return retval
 
-    def setDatastore(self, url):
+    def setDatastore(self, url, type):
         self.config.set('datastore','url',url)
+        self.config.set('datastore','type',type)
 
     def getRepository(self):
         return self.config.get('repository','url')

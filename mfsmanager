@@ -20,14 +20,18 @@ def merge(manifest_path_a, manifest_path_b, manifest_path_dest):
 def export_files(manifest_path, destination_path, export_type, config):
     """creates all files form the manifest in the provided directory"""
 
-    datastore = mfs.datastore.Datastore(config.datastore)
+    datastore = mfs.datastore.Datastore(
+        config.datastore.url,
+        config.datastore.type)
     manifest = mfs.manifest.serializer.fromXML(manifest_path)
     manifest.export(destination_path, datastore, export_type)
 
 def import_files(path, dest):
     """traveres through given path and creates a manifest"""
     print "reading files from %s" % path
-    datastore = mfs.datastore.Datastore(config.datastore)
+    datastore = mfs.datastore.Datastore(
+        config.datastore.url,
+        config.datastore.type)
     manifest = mfs.manifest.serializer.fromPath(path, datastore)
     print "generating xml"
     xml = manifest.toXML()
@@ -43,7 +47,10 @@ def datastore_cleanup(manifests):
         manifest = mfs.manifest.serializer.fromXML(manifest_path)
         hashes += manifest.get_hashes()
 
-    datastore = mfs.datastore.Datastore(config.datastore)
+    datastore = mfs.datastore.Datastore(
+        config.datastore.url,
+        config.datastore.type)
+
 
     todel = set(datastore.contents()) - set(hashes)
     for node in todel:
@@ -61,7 +68,10 @@ def mount_manifest(manifest_path, mountpoint_path):
     log.addHandler(handler)
 
     manifest = mfs.manifest.serializer.fromXML(manifest_path)
-    datastore = mfs.datastore.Datastore(config.datastore)
+    datastore = mfs.datastore.Datastore(
+        config.datastore.url,
+        config.datastore.type)
+ 
     operations = mfs.fs.Operations(
         manifest,
         datastore)
@@ -80,8 +90,11 @@ def diff(file_a, file_b):
 
 def datastore_store(source, manifest_path):
     """stores all files specified in the manifest in the provided datastore location"""
-    manifest = mfs.manifest.serializer.fromXML(config.datastore)
-    datastore = mfs.datastore.Datastore(config.datastore)
+    manifest = mfs.manifest.serializer.fromXML(manifest_path)
+    datastore = mfs.datastore.Datastore(
+        config.datastore.url,
+        config.datastore.type)
+ 
 
     for node in manifest:
         if (isinstance (node, mfs.manifest.nodes.File)
@@ -89,13 +102,15 @@ def datastore_store(source, manifest_path):
             print "storing {0}".format(source + node.path)
             datastore.saveData(node, source + node.path)
 
-def datastore_fsck(datastore_path):
+def datastore_fsck():
     """checks the files in the datastore for consistency"""
-    datastore = mfs.datastore.Datastore(datastore_path)
+    datastore = mfs.datastore.Datastore(
+        config.datastore.url,
+        config.datastore.type)
 
     for filehash, filesize in datastore.contents():
         if not datastore.check(filehash, filesize):
-            print "error in " + filehash + ':' + filesize
+            print "error in " + datastore.getPath2(filehash, filesize)
 
 if __name__ == "__main__":
     
@@ -160,7 +175,7 @@ if __name__ == "__main__":
 
     if (action == "fsck"):
         try:
-            datastore_fsck(arguments[0])
+            datastore_fsck()
         except IndexError:
             print "usage {0} fsck".format(sys.argv[0])
             sys.exit(1)

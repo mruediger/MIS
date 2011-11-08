@@ -15,12 +15,15 @@ import hashlib
 import zlib
 from urllib2 import urlopen
 
-def hash(path):
+def hash(path, compressed=False):
     """reads the file and generates a hash"""
     hl = hashlib.sha1()
+    dcobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
     with open(path, 'rb') as fsrc:
         while True:
              data = fsrc.read(16 * 4096)
+             if compressed:
+                data = dcobj.decompress(data)
              if not data: break
              hl.update(data)
         fsrc.close()
