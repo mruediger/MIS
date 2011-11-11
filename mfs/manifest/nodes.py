@@ -359,6 +359,9 @@ class Directory(Node):
         else:
             retval = copy(self)
 
+        if isinstance(node, WhiteoutNode):
+            return retval
+
         snodes = self.children_as_dict
         nnodes = node.children_as_dict
 
@@ -529,11 +532,6 @@ class File(Node):
 
 class WhiteoutNode(Node):
 
-    __slots__ = [
-        'name',
-        'parent'
-    ]
-    
     def __str__(self):
         if (self.parent):
             return str(self.parent) + '/' + self.name + '(delnode)'
@@ -547,7 +545,7 @@ class WhiteoutNode(Node):
         return copy(node)
 
     def toXML(self):
-        xml = etree.Element("file")
+        xml = super(WhiteoutNode,self).toXML()
         xml.attrib["name"] = self.name
         xml.attrib["type"] = "WhiteoutNode"
         return xml
