@@ -8,7 +8,9 @@ provides the basic llfuse linkage
 import llfuse
 import errno
 import mfs
+import gzip
 
+from collections import defaultdict
 
 class Operations(llfuse.Operations):
     """The Operations class overloads llfuse.Operations where nessessary."""
@@ -20,9 +22,10 @@ class Operations(llfuse.Operations):
         self.nodecache  = [ None ] # inodes start with number 1
         self.entrycache = [ None ]
 
-        self.filecache = dict()
         self.hardlinks = dict()
-
+	
+        self.filecache = defaultdict(int)
+	self.inode_open_count = defaultdict(int)
 
         self.fstat = llfuse.StatvfsData()
         #optimal transfer block size
@@ -49,7 +52,7 @@ class Operations(llfuse.Operations):
             self.genEntryAndInode(node)
 
     def init(self):
-        pass
+        print "ready"
 
     def getattr(self, inode):
         return self.entrycache[inode]
@@ -109,23 +112,32 @@ class Operations(llfuse.Operations):
 
     def open(self, inode, flags):
         node = self.nodecache[inode]
-        if hasattr(node, "hash"):
-            self.filecache[inode] = open(self.datastore.getPath(
-                node
-            ))
+        self.inode_open_count[inode] += 1
+	if hasattr(node, "hash"):
+           path = self.datastore.getPath(node)
+       
+           if self.datastore.is_compressed():
+              self.filecache[inode] = gzip.open(path)
+           else:
+              self.filecache[inode] = open(path)
         return inode
 
     def read(self, fh, offset, length):
         if fh in self.filecache:
             self.filecache[fh].seek(offset)
-            return self.filecache[fh].read(length)
+            data = self.filecache[fh].read(length)
+            return data
         else:
             return ""
 
     def release(self, fh):
-        if fh in self.filecache:
-            self.filecache[fh].close()
-            del self.filecache[fh]
+        self.inode_open_count[fh] -= 1
+
+        if self.inode_open_count[fh] == 0:
+           del self.inode_open_count[fh]
+           if fh in self.filecache:
+              self.filecache[fh].close()
+              del self.filecache[fh]
 
     def readlink(self, inode):
         return self.nodecache[inode].target
@@ -135,4 +147,6 @@ class Operations(llfuse.Operations):
         return self.fstat
 
 
-
+#    def __getattribute__(self,name):
+#        print name + " called"
+#        return object.__getattribute__(self, name)
