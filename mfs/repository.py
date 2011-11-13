@@ -15,6 +15,9 @@ class Repository(object):
         index = filename.rfind('.')
         (name, _, version) = filename[:index].partition('-')
 
+	print name
+	print version
+
         if not name in self.manifests:
             self.manifests[name] = [ version ]
         else:
