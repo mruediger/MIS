@@ -1,0 +1,12 @@
+MARVIN Images Store README
+--------------------------
+
+MIS basicly is a library for storing manifests. It comes 
+with three tool, called misclient, misserver and mismanager
+that use this library.
+
+The programs misclient and misserver are to be used providing
+and downloading manifest files and images over a network.
+
+The program mismanager can be used to create manifests or images.
+Also mounting images is possible with this program.
