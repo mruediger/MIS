@@ -317,6 +317,8 @@ class Device(Node):
         return xml
 
     def export(self, datastore, exporter):
+        if os.path.exists(exporter.getPath(self)):
+            os.remove(exporter.getPath(self))
         try:
             os.mknod(exporter.getPath(self), self.stats.st_mode, os.makedev(
                 os.major(self.rdev),
@@ -330,6 +332,9 @@ class Device(Node):
 class FIFO(Node):
 
     def export(self, datastore, exporter):
+        if os.path.exists(exporter.getPath(self)):
+            os.remove(exporter.getPath(self))
+
         try:
             os.mkfifo(exporter.getPath(self))
             self.stats.export(exporter.getPath(self))
@@ -430,10 +435,8 @@ class Directory(Node):
         return xml
 
     def export(self, datastore, exporter):
-        try:
+        if not os.path.exists(exporter.getPath(self)): 
             os.mkdir(exporter.getPath(self))
-        except OSError as (errno, strerror):
-            print "mkdir {0}: {1}".format(exporter.getPath(self), strerror)
 
         olddir = exporter.directory
         exporter.directory = exporter.directory + '/' + self.name
@@ -517,6 +520,8 @@ class File(Node):
     def export(self, datastore, exporter):
         if (self.stats.st_nlink > 1):
             if (self.orig_inode in exporter.linkcache):
+                if os.path.exists(exporter.getPath(self)):
+                    os.remove(exporter.getPath(self))
                 os.link(exporter.linkcache[self.orig_inode], exporter.getPath(self))
                 return
             else:
