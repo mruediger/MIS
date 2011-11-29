@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import unittest
-import mfs
+import mis
 
-from mfs.repository import MemRepository,FileRepository
+from mis.repository import MemRepository,FileRepository
 
 class RepositoryTest(unittest.TestCase):
     
@@ -24,7 +24,7 @@ class RepositoryTest(unittest.TestCase):
         repository = FileRepository('tmp/repository')
         self.assertEquals(['debian', 'testdir'], repository.getManifests())
         self.assertEquals(['1','2','2.1.a', '4'], repository.getVersions('debian'))
-        orig_manifest = mfs.manifest.serializer.fromXML('tmp/repository/testdir.xml')
+        orig_manifest = mis.manifest.serializer.fromXML('tmp/repository/testdir.xml')
         self.assertEquals(orig_manifest, repository.getManifest('testdir'))
 
 

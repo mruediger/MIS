@@ -1,7 +1,7 @@
 import unittest
 import re
 
-from mfs.autopatcher import Autopatcher
+from mis.autopatcher import Autopatcher
 
 class AutopatcherTest(unittest.TestCase):
     

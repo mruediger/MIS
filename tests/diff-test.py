@@ -2,7 +2,7 @@
 
 import unittest
 import copy
-from mfs.manifest.nodes import *
+from mis.manifest.nodes import *
 
 class TestDiff(unittest.TestCase):
 

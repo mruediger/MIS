@@ -1,9 +1,10 @@
+# Copyright 2011 Mathias Ruediger <ruediger@blueboot.org>
+# See LICENSE for details.
+
 from mis.manifest.nodes import Directory, Manifest
 from threading import Thread
 
 import time
-
-#TODO map, filter, reduce benutzen
 
 
 def merge_children(target, orig, new, handle_whiteouts):

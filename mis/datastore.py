@@ -1,3 +1,6 @@
+# Copyright 2011 Mathias Ruediger <ruediger@blueboot.org>
+# See LICENSE for details.
+
 import os
 import tempfile
 from urlparse import urlparse, urlsplit, urljoin

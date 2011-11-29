@@ -4,8 +4,8 @@ import unittest
 
 from copy import copy
 
-from mfs.manifest.nodes import Directory, File, Manifest, WhiteoutNode, RMNode
-from mfs.manifest.merge import merge
+from mis.manifest.nodes import Directory, File, Manifest, WhiteoutNode, RMNode
+from mis.manifest.merge import merge
 
 
 class MergerTest(unittest.TestCase):

@@ -7,8 +7,8 @@ import shutil
 import urllib
 import gzip 
 
-from mfs.datastore import Datastore
-from mfs.manifest.nodes  import File,Stats
+from mis.datastore import Datastore
+from mis.manifest.nodes  import File,Stats
 
 class DatastoreTest(unittest.TestCase):
 

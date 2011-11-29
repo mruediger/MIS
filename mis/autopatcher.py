@@ -1,3 +1,5 @@
+# Copyright 2011 Mathias Ruediger <ruediger@blueboot.org>
+# See LICENSE for details.
 """A class that replaces the content of a file by the result of a script"""
 
 import subprocess

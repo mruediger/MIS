@@ -1,15 +1,15 @@
 #!/usr/bin/python
 
 import unittest
-import mfs
+import mis
 import os
 import stat
 
 from StringIO import StringIO
 from lxml import etree
 
-from mfs.manifest.nodes import Directory,File,WhiteoutNode,Manifest
-from mfs.datastore import Datastore
+from mis.manifest.nodes import Directory,File,WhiteoutNode,Manifest
+from mis.datastore import Datastore
 
 class TestManifest(unittest.TestCase):
 
@@ -17,7 +17,7 @@ class TestManifest(unittest.TestCase):
         pass
 
     def testSetStats(self):
-        node = mfs.manifest.nodes.Directory('/tmp', os.stat('/tmp'))
+        node = mis.manifest.nodes.Directory('/tmp', os.stat('/tmp'))
 
         #check that all stats, except inode are set
         for key in [ key for key in node.__slots__ if key.startswith("st_")]:
@@ -26,7 +26,7 @@ class TestManifest(unittest.TestCase):
                 print key
                 self.assertFalse(True)
 
-        manifest = mfs.manifest.serializer.fromPath('tmp/testdir')
+        manifest = mis.manifest.serializer.fromPath('tmp/testdir')
         childdict = manifest.root.children_as_dict
 
         self.assertTrue(stat.S_ISDIR(childdict['testdir'].stats.st_mode))
@@ -39,9 +39,9 @@ class TestManifest(unittest.TestCase):
 
     def testToXML(self):
         datastore = Datastore('tmp/datastore', Datastore.SPARSE)
-        manifest_orig = mfs.manifest.serializer.fromPath('tmp/testdir', datastore)
+        manifest_orig = mis.manifest.serializer.fromPath('tmp/testdir', datastore)
         xml = etree.tostring(manifest_orig.toXML(), pretty_print=True)
-        manifest_new = mfs.manifest.serializer.fromXML(StringIO(xml))
+        manifest_new = mis.manifest.serializer.fromXML(StringIO(xml))
 
         for line in manifest_orig.diff(manifest_new):
             print line
@@ -146,7 +146,7 @@ class TestManifest(unittest.TestCase):
                 self.assertTrue((node.hash, node.stats.st_size) in hashes)
 
     def testSingleFile(self):
-        manifest =  mfs.manifest.serializer.fromXML('tmp/repository/testdir.xml')
+        manifest =  mis.manifest.serializer.fromXML('tmp/repository/testdir.xml')
         self.assertTrue(manifest.node_by_path('/nonexistend') is None)
 
 if __name__ == '__main__':

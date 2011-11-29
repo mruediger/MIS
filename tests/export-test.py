@@ -7,9 +7,9 @@ import shutil
 
 from stat import *
 
-from mfs.exporter import Exporter
-from mfs.manifest.nodes import *
-from mfs.datastore import Datastore
+from mis.exporter import Exporter
+from mis.manifest.nodes import *
+from mis.datastore import Datastore
 
 class TestExport(unittest.TestCase):
 

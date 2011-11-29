@@ -1,7 +1,7 @@
 import unittest
 import io
 
-import mfs.config
+import mis.config
 
 
 test_config = """
@@ -14,7 +14,7 @@ url = file://home/bag/projects/diplomarbeit/src/tmp/repository
 class ConfigTest(unittest.TestCase):
 
     def setUp(self):
-        self.config = mfs.config.Config(io.BytesIO(test_config))
+        self.config = mis.config.Config(io.BytesIO(test_config))
 
 
     def testGetDatastore(self):
