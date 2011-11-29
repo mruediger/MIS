@@ -1,28 +1,16 @@
 TODO:
-    aufs whiteouts bei merge
-    rmnode bei minus
-    
-    cleanup datastore
+    fifo hardlinks (gibts eigentlich nicht)
+    unionfs support
     acl
-
-Cleanup Datastore:
-    liste von hashes aus manifesten extrahieren
-    manifeste oder liste von server anfordern
 
 Refactoring:
     entschlacken von manifest klasse
-    with fuer datei operationen
     bla or 'default' anstatt hasattr()
     deprecated decorator implementieren
     pychecker
 
-Performance Test:
-    dateisystem caching optimieren
-    einlesen von manifests langsam (pickle?)
-
 Mogliche Fehler:
     Dateisystem locking anschauen
-    wie funktioniert SHA-1
     unionfs mit whiteouts im basis layer testen (muessen bleiben)
     
 Filtern:

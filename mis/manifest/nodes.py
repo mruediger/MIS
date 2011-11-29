@@ -13,8 +13,8 @@ from copy import copy,deepcopy
 from lxml import etree
 from collections import deque
 
-import mfs.fileops
-from mfs.exporter import *
+import mis.fileops
+from mis.exporter import *
 
 
 class Manifest(object):
@@ -525,7 +525,7 @@ class File(Node):
         is_sparsefile = ( self.stats.st_size > 
             ( self.stats.st_blocks * self.stats.st_blksize ))
 
-        mfs.fileops.copy(datastore.getURL(self), exporter.getPath(self), 
+        mis.fileops.copy(datastore.getURL(self), exporter.getPath(self), 
             is_sparsefile, datastore.is_compressed(), self.stats.st_blksize, self.stats.st_size)
 
         self.stats.export(exporter.getPath(self))

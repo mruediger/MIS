@@ -1,5 +1,5 @@
 """
-mfs.fs
+mis.fs
 ======
 
 provides the basic llfuse linkage
@@ -7,7 +7,7 @@ provides the basic llfuse linkage
 
 import llfuse
 import errno
-import mfs
+import mis
 import gzip
 
 from collections import defaultdict
@@ -69,7 +69,7 @@ class Operations(llfuse.Operations):
             setattr(entry, attr, getattr(node.stats, attr))
     
         #hardlink detection
-        if (isinstance(node, mfs.manifest.nodes.File) and node.stats.st_nlink > 1):
+        if (isinstance(node, mis.manifest.nodes.File) and node.stats.st_nlink > 1):
             if(not self.hardlinks.has_key(node.orig_inode)):
                 self.hardlinks[node.orig_inode] = self.highest_inode
             entry.st_ino = self.hardlinks[node.orig_inode]

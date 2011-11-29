@@ -1,4 +1,4 @@
-from mfs.manifest.nodes import Directory, Manifest
+from mis.manifest.nodes import Directory, Manifest
 from threading import Thread
 
 import time

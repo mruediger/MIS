@@ -1,5 +1,5 @@
 """
-    mfs: MARVIN Filesystem
+    mis: MARVIN Image Store
 
 This module has jet do be documented
 """

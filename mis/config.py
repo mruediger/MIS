@@ -1,5 +1,5 @@
 import ConfigParser
-from mfs.datastore import Datastore
+from mis.datastore import Datastore
 
 class DatastoreConfig(object):
     pass

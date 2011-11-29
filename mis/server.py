@@ -1,7 +1,7 @@
 import pickle
-from mfs.manifest.nodes import PatchNode,File
+from mis.manifest.nodes import PatchNode,File
 
-class MFSServer(object):
+class MisServer(object):
     
     def __init__(self, repository, autopatcher, datastore):
         self.repository = repository

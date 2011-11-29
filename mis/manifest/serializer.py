@@ -10,8 +10,8 @@ __author__ = 'Mathias Ruediger <ruediger@blueboot.org>'
 import os
 import stat
 
-import mfs.fileops as fileops
-from mfs.manifest.nodes import *
+import mis.fileops as fileops
+from mis.manifest.nodes import *
 
 
 class NullNode(object):

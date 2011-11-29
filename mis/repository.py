@@ -1,7 +1,7 @@
 import urlparse
 import os
 
-import mfs
+import mis
 
 """A repository class for manifest files, either backed by memory or 
 a directory containing xml files"""
@@ -68,5 +68,5 @@ class FileRepository(Repository):
             else:
                 filename = name + '.xml'
 
-        manifest = mfs.manifest.serializer.fromXML(self.directory + '/' + filename)
+        manifest = mis.manifest.serializer.fromXML(self.directory + '/' + filename)
         return manifest

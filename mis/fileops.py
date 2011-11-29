@@ -1,14 +1,9 @@
 # Copyright 2011 Mathias Ruediger <ruediger@blueboot.org>
 # See LICENSE for details.
 
-"""MFS file operations
+"""MIS file operations
     
-everything done with real file happenes here"""
-
-#TODO copy might be better than read/write
-#TODO shutil instead of own code?
-#TODO copy and hash faster than separate invocations?
-#TODO options for sparse file handling?
+everything done with real files happenes here"""
 
 import os
 import hashlib

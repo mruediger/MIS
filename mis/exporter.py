@@ -1,5 +1,5 @@
 import os.path
-import mfs.manifest 
+import mis.manifest 
 
 class Exporter(object):
 
