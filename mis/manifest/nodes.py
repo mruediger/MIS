@@ -444,7 +444,7 @@ class Directory(Node):
         for child in self._children:
             child.export(datastore, exporter)
         
-        exporter.directory = olddir #FIXME
+        exporter.directory = olddir
 
         #set times and mode after files are put into it
         self.stats.export(exporter.getPath(self))

@@ -4,10 +4,10 @@ import sys
 
 from SimpleXMLRPCServer import SimpleXMLRPCServer as Server
 
-from mfs.repository import FileRepository
-from mfs.server import MFSServer
-from mfs.datastore import Datastore
-from mfs.autopatcher import Autopatcher
+from mis.repository import FileRepository
+from mis.server import MFSServer
+from mis.datastore import Datastore
+from mis.autopatcher import Autopatcher
 
 def run(repo, port, autopatcher, datastore):
     repository = FileRepository(repo)

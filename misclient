@@ -10,7 +10,7 @@ import sys
 
 from lxml import etree
 
-import mfs
+import mis
 
 def print_manifest(host, name, version=""):
     '''prints the according manifest to stdout'''
@@ -27,7 +27,7 @@ def listVersions(host, name):
 def pull(host, config, name, version, folder):
     '''pulls image "name" with version "version" into folder "folder"'''
     client = xmlrpclib.ServerProxy(host)
-    datastore = mfs.datastore.Datastore(
+    datastore = mis.datastore.Datastore(
         config.datastore.url,
         config.datastore.type)
     manifest  = pickle.loads(client.getManifest(name, version))
@@ -39,7 +39,7 @@ def update(host, config, name, oldversion, newversion, destination):
     old_manifest = pickle.loads(client.getManifest(name, oldversion))
     new_manifest = pickle.loads(client.getManifest(name, newversion))
 
-    datastore = mfs.datastore.Datastore(
+    datastore = mis.datastore.Datastore(
         config.datastore.url,
         config.datastore.type)
     manifest = new_manfiest - old_manifest
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     try:
         with open(sys.argv[1]) as configfile:
-            config = mfs.config.Config(configfile)
+            config = mis.config.Config(configfile)
         host   = sys.argv[2]
         action = sys.argv[3]
         arguments = sys.argv[4:]
