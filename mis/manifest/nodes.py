@@ -275,7 +275,7 @@ class Node(object):
 
     def toXML(self):
         xml = etree.Element("file")
-        xml.attrib["name"] = self.name
+	xml.attrib["name"] = self.name.decode('utf-8')
         xml.attrib["type"] = type(self).__name__
         xml.append(self.stats.toXML())
         return xml
