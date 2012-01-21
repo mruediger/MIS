@@ -110,8 +110,11 @@ def datastore_fsck():
         config.datastore.type)
 
     for filehash, filesize in datastore.contents():
-        if not datastore.check(filehash, filesize):
-            print "error in " + datastore.getPath2(filehash, filesize)
+        try:
+		if not datastore.check(filehash, filesize):
+            		print "error in " + datastore.getPath2(filehash, filesize)
+	except Exception:
+		print "error in " + datastore.getPath2(filehash, filesize)
 
 if __name__ == "__main__":
     
