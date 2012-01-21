@@ -57,6 +57,32 @@ def datastore_cleanup(manifests):
         print "removing " + datastore.getPath(node)
         datastore.remove(filehash)
 
+	
+def datastore_du(manifests):
+    """sums up the real data comsumed by the given manifests"""
+	
+    sizes = dict()
+    size = 0
+    datastore = mis.datastore.Datastore(
+        config.datastore.url,
+        config.datastore.type)
+
+    for manifest_path in manifests:
+        print "reading %s" % manifest_path
+        manifest = mis.manifest.serializer.fromXML(manifest_path)
+        
+        for hash in manifest.get_hashes():
+            path = datastore.getPath2(hash[0], str(hash[1]))
+            try:
+                if hash[0] not in sizes:
+                    sizes[hash[0]] = os.path.getsize(path)
+            except Exception:
+                print "error in " + path
+           
+        print "size : %s" % sum(sizes.values())
+        print "count: %s" % len(sizes)
+	
+
 def mount_manifest(manifest_path, mountpoint_path):
     #init logging
     
@@ -124,6 +150,7 @@ if __name__ == "__main__":
     help_message += """\n   export : store contents of a manifest to a directory"""
     help_message += """\n   store  : store files to datastore"""
     help_message += """\n   clean  : remove unneded files form datastore"""
+    help_message += """\n   du     : print the used size in bytes"""
     help_message += """\n   fsck   : check the datastore for file corruption"""
     help_message += """\n   diff   : compare two manifest files"""
     help_message += """\n   mount  : mount manifest to mountpoint"""
@@ -196,7 +223,14 @@ if __name__ == "__main__":
             datastore_cleanup(arguments)
         except IndexError:
             print "usage {0} cleanup MANIFEST [MANIFEST [MANIFEST ...".format(sys.argv[0])
-            
+	
+    if (action == "du"):
+        try:
+            datastore_du(arguments)
+        except IndexError:
+            print "usage {0} du MANIFEST [MANIFEST [MANIFEST ...".format(sys.argv[0])
+
+
     if (action == "mount"):
         try:
             mount_manifest(
