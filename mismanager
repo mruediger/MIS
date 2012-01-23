@@ -9,6 +9,10 @@ import logging
 
 import mis
 
+def test(manifest_path):
+    manifest = mis.manifest.serializer.fromXML(manifest_path)
+    
+
 def merge(manifest_path_a, manifest_path_b, manifest_path_dest):
     manifest_a = mis.manifest.serializer.fromXML(manifest_path_a)
     manifest_b = mis.manifest.serializer.fromXML(manifest_path_b)
@@ -247,3 +251,11 @@ if __name__ == "__main__":
                 manifest_path_dest = arguments[2])
         except IndexError:
             print "usage {0} merge MANIFEST_A MANITEST_B OUTPUT".format(sys.argv[0])
+
+    if (action == "test"):
+        try:
+            test(
+                manifest_path = arguments[0]
+            )
+        except IndexError:
+            print "usage {0} test MANIFEST".format(sys.argv[0])
