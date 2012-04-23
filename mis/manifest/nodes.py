@@ -1,7 +1,7 @@
 # Copyright 2011 Mathias Ruediger <ruediger@blueboot.org>
 # Distributed under the terms of the GNU General Public License v2
 
-"""manifest
+"""manifest definition
 
 the manifest object and the classes representing files"""
 
@@ -18,13 +18,15 @@ from mis.exporter import *
 
 
 class Manifest(object):
-
+    """  """
     def __init__(self, root):
         self.root = root
         self.uuid = str(uuid.uuid4())
         self._parents = list()
 
     def diff(self, manifest):
+        """returns a string describing the differences of the
+        given and actual manifest"""
         return self.root.diff(manifest.root)
 
     def toXML(self):
@@ -72,6 +74,8 @@ class Manifest(object):
         return Manifest(deepcopy(self.root))
 
     def __add__(self, manifest):
+        """x.__add__(y) <==> x + y
+        merges two virtual machine images"""
         new_root = self.root + manifest.root
         new_manifest = Manifest(new_root)
         new_manifest._parents.append(self.uuid)
@@ -80,6 +84,10 @@ class Manifest(object):
 
 
     def __sub__(self, manifest):
+        """x.__sub__(y) <==> x - y
+        returns a new manifest that only contains
+        files in x that are not in y 
+        ( only_update = update_image - orig_image"""
         new_root = self.root - manifest.root
         new_manifest = Manifest(new_root)
         new_manifest._parents.append(self.uuid)
@@ -87,20 +95,23 @@ class Manifest(object):
         return new_manifest
 
     def __eq__(self, manifest):
+        """x.__eq__(y) <==> x==y""" 
         return self.root == manifest.root
 
     def __iter__(self):
+        """x.__iter__() <==> iter(x)"""
         for child in self.root:
             yield(child)
 
 class Stats(object):
+    """container for metadata information providet by the stat() call"""
 
     __slots__ = [
         'st_uid',
         'st_gid',
-        'st_blksize',   #TODO sparse files checken
-        'st_size',      #TODO sparse files checken 
-        'st_blocks',    #TODO sparse files checken
+        'st_blksize',
+        'st_size',
+        'st_blocks',
         'st_atime',
         'st_mtime',
         'st_ctime',
@@ -112,26 +123,35 @@ class Stats(object):
             setattr(self, key, copy(getattr(stats, key, None)))
 
     def __getstate__(self):
+        """needed for pickle because of __slots__ usage"""
         return [ getattr(self, slot, None) for slot in self.__slots__ ]
 
     def __setstate__(self, state):
+        """needed for pickle because of __slots__ usage"""
         for i in range(0, len(state)):
             setattr(self, self.__slots__[i], state[i])
 
     def __copy__(self):
+        """x.__copy__() <==> copy(x)"""
         return Stats(self) 
 
     def __deepcopy__(self):
+        """x.__deepcopy__() <==> deepcopy(x)"""
         return self.__copy__()
 
     def __eq__(self, stats):
+        """x.__eq__(y) <==> x==y""" 
         slots = filter(lambda x: not x.endswith("time"), self.__slots__)
         return all([ getattr(self, slot, None) == getattr(stats, slot, None) for slot in slots ])
 
     def __str__(self):
+        """x.__str__() <==> str(x)
+        returns list of stats"""
         return str().join([slot + ":" + str(getattr(self,slot,None)) + '\n' for slot in self.__slots__])
 
     def isNewerThan(self, stats):
+        """compares the files modification time."""
+        # this method is used by __add__
         return self.st_mtime > stats.st_mtime 
 
     def toXML(self):
@@ -144,12 +164,14 @@ class Stats(object):
         return xml
         
     def export(self, path):
-        os.chown(path, self.st_uid, self.st_gid)        #TODO security
-        os.chmod(path, self.st_mode)                    #TODO security
+        """changes uid, gid, mode, mtime and atime of the given file"""
+        os.chown(path, self.st_uid, self.st_gid) 
+        os.chmod(path, self.st_mode) 
         os.utime(path, (self.st_atime, self.st_mtime))
 
 class Node(object):
-    
+    """abstract class which doesn't represent an existing file type"""
+
     __slots__ = [
         'name',
         'parent',
@@ -176,25 +198,31 @@ class Node(object):
         self.parent = None
 
     def __getstate__(self):
+        """needed for pickle because of __slots__ usage"""
         return [ getattr(self, slot, None) for slot in self.__slots__ ]
 
     def __setstate__(self, state):
+        """needed for pickle because of __slots__ usage"""
         for i in range(0, len(state)):
             setattr(self, self.__slots__[i], state[i])
             
     def __add__(self, node):
+        """Merge to Files"""
         if node.isNewerThan(self):
             return copy(node)
         else:
             return copy(self)
 
     def __sub__(self, node):
-        if (self == node):
+        """Delete File if content equals"""
+        if (self == node): # only delete if nodes are exactly the same
             return None
         else:
             return copy(self)
 
     def diff(self, node):
+        """returns a string describing the differences
+        of the given and the actual stat object"""
         retval = list()
         for slot in self.__slots__:
             if (slot in self._diffignore): continue
@@ -213,16 +241,20 @@ class Node(object):
             if (s != n):
                 retval.append("{0} != {1} ({2}: {3},{4})".format(self, node, slot, s, n))
             
-        return retval 
+        return retval
         
     def __str__(self):
+        """x.___str___() <==> str(x)
+        returns the path"""
         if (self.parent):
             return str(self.parent) + '/' + self.name
         else:
             return self.name
 
     def __eq__(self, node):
-
+        """x.__eq__(y) <==> x==y
+        compares filename, attributes and content"""
+        
         for key in self.__slots__:
             #we do not want to loop endlessly
             if (key == 'parent') : continue
@@ -230,7 +262,7 @@ class Node(object):
             #inode is dynamic
             if (key == 'inode') : continue
 
-            #children may differ in order
+            #the order of [_children] may differ
             if (key == '_children') : continue
 
             if not getattr(self, key, None) == getattr(node, key, None):
@@ -239,9 +271,11 @@ class Node(object):
         return True
 
     def __iter__(self):
+        """x.__iter__() <==> iter(x)"""
         yield self
 
     def __copy__(self):
+        """clones the object"""
         retval = self.__class__(self.name)
         for key in self.__slots__:
             if (key == 'parent'):
@@ -257,18 +291,22 @@ class Node(object):
         return retval
 
     def __deepcopy__(self, memo):
+        """clones the object"""
         return self.__copy__()
 
     def isNewerThan(self, node):
+        """compares the files modification time"""
         self.stats.isNewerThan(node.stats)
 
     def export(self, datastore, exporter):
         raise Exception("Node Objects cannot be exported")
 
     def remove(self, exporter):
+        """removes the file on the filesystem"""
         os.remove(exporter.getPath(self))
 
     def addTo(self, directory):
+        """insertes the file into a directory"""
         assert isinstance(directory, Directory)
         directory._children.append(self)
         self.parent = directory
@@ -280,10 +318,13 @@ class Node(object):
         xml.append(self.stats.toXML())
         return xml
 
-    path = property(lambda self: getattr(self.parent, 'path', "") + self.name)
-    rdev = property(lambda self: 0)
+    path = property(lambda self: getattr(self.parent, 'path', "") + self.name, 
+        doc="the path in the image")
+    rdev = property(lambda self: 0,
+        doc="returns 0 since rdev only has a meaning for device files")
 
 class SymbolicLink(Node):
+    """class representing a symbolic link"""
 
     __slots__ = Node.__slots__ + [ 'target' ]
 
@@ -297,6 +338,7 @@ class SymbolicLink(Node):
         return xml
 
     def export(self, datastore, exporter):
+        """creates a symbolic link under the path storend in the exporter object"""
         try:
             os.symlink(self.target, exporter.getPath(self))
             os.lchown(exporter.getPath(self), self.stats.st_uid, self.stats.st_gid)
@@ -306,6 +348,7 @@ class SymbolicLink(Node):
             return
 
 class Device(Node):
+    """class representing a device file"""
 
     #the rest is handled automaticly by setStat
     __slots__ = Node.__slots__ + ['rdev']
@@ -317,6 +360,7 @@ class Device(Node):
         return xml
 
     def export(self, datastore, exporter):
+        """creates a device file under the path storend in the exporter object"""
         if os.path.exists(exporter.getPath(self)):
             os.remove(exporter.getPath(self))
         try:
@@ -330,8 +374,10 @@ class Device(Node):
             return
 
 class FIFO(Node):
+    """class representing a fifo"""
 
     def export(self, datastore, exporter):
+        """creates a fifo under the path storend in the exporter object"""
         if os.path.exists(exporter.getPath(self)):
             os.remove(exporter.getPath(self))
 
@@ -343,6 +389,7 @@ class FIFO(Node):
             return
 
 class Directory(Node):
+    """class representing a directory"""
 
     __slots__ = Node.__slots__ + [ '_children' ]
     _diffignore = Node._diffignore + [
@@ -359,12 +406,16 @@ class Directory(Node):
         return self._children[i]    
 
     def __add__(self, node):
+        """merges two directories"""
+
         if node.isNewerThan(self):
+            #flat copy doesn't contain dir content
             retval = copy(node)
         else:
             retval = copy(self)
 
         if isinstance(node, WhiteoutNode):
+            # break here when the dir was maked as deleted
             return retval
 
         snodes = self.children_as_dict
@@ -400,7 +451,15 @@ class Directory(Node):
         return retval
 
     def __sub__(self, node):
+        """Returns a directory object that only contains the differences
+        between x and y for x.__sub__(y). If a files are present in y but
+        not in x, RMNodes are stored to allow for something like
+        only_update = updated_image - orig_image, in a way that later merges
+        will result in an updatet manifest 
+        (orig_image + only_update = updated_image)"""
+
         if (self == node):
+            # delete if there are no differences
             return None
 
         retval = copy(self)
@@ -419,11 +478,16 @@ class Directory(Node):
             if (snode and nnode):
                 newchild = snode - nnode
             elif nnode:
+                # if files where removed, create RMNodes
+                # to apply these changes to existing
+                # images
                 newchild = RMNode(deepcopy(nnode))
             else:
                 newchild = deepcopy(snode)
 
-            if newchild:
+            if newchild: 
+                #check for None which happens
+                #if x == y during x.__sub__(y)
                 newchild.addTo(retval)
         
         return retval
@@ -435,33 +499,40 @@ class Directory(Node):
         return xml
 
     def export(self, datastore, exporter):
+        """creates a directory under the path storend in the exporter object"""
         if not os.path.exists(exporter.getPath(self)): 
             os.mkdir(exporter.getPath(self))
 
+        # poor mans pushd 
         olddir = exporter.directory
         exporter.directory = exporter.directory + '/' + self.name
 
         for child in self._children:
             child.export(datastore, exporter)
-        
+       
+        # poor mans popd
         exporter.directory = olddir
 
-        #set times and mode after files are put into it
+        # set times and mode after files are put into it
         self.stats.export(exporter.getPath(self))
 
     def remove(self, exporter):
+        """recursively deletes the directory and its contents"""
         for child in self._children:
             child.remove(exporter)
 
         os.rmdir(exporter.getPath(self))
 
     def __iter__(self):
+        """x.__iter__() <==> iter(x)"""
         yield self
         for child in self._children:
             for retval in child:
                 yield retval
 
     def diff(self, directory):
+        """returns a string describing the differences
+        of the directory contents"""
         retval = super(Directory, self).diff(directory)
 
         sdict = self.children_as_dict
@@ -480,6 +551,7 @@ class Directory(Node):
 
 
     def __eq__(self, node):
+        """x.__eq__(y) <==> x==y"""
         if (not super(Directory,self).__eq__(node)):
             return False
         else:
@@ -496,10 +568,14 @@ class Directory(Node):
 
         return True
 
-    path = property(lambda self: getattr(self.parent, 'path', "") + self.name + '/')
-    children_as_dict = property(lambda self: dict( (child.name, child) for child in self._children ))
+    path = property(lambda self: getattr(self.parent, 'path', "") + self.name + '/',
+        doc="same as node but for directories a '/' is appended")
+    children_as_dict = property(lambda self: dict( (child.name, child) for child in self._children ),
+        doc="shortcut for acces by filename")
 
 class File(Node):
+    """A Class representing a "regular" file that holds content. It is the
+    only type that interacts with the datastore"""
 
     __slots__ = Node.__slots__ + [ 'hash', 'orig_inode' ]
 
@@ -518,8 +594,9 @@ class File(Node):
         return xml
 
     def export(self, datastore, exporter):
-        if (self.stats.st_nlink > 1):
-            if (self.orig_inode in exporter.linkcache):
+        """copies the datastore content to the path storend in the exporter object"""
+        if (self.stats.st_nlink > 1): #has hardlinks
+            if (self.orig_inode in exporter.linkcache): # content already created
                 if os.path.exists(exporter.getPath(self)):
                     os.remove(exporter.getPath(self))
                 os.link(exporter.linkcache[self.orig_inode], exporter.getPath(self))
@@ -536,17 +613,22 @@ class File(Node):
         self.stats.export(exporter.getPath(self))
 
 class WhiteoutNode(Node):
+    """A class representing Whiteout Files like AuFS' .wh.foo"""
 
     def __str__(self):
+        """x.__str__() <==> str(x)
+        returns path"""
         if (self.parent):
             return str(self.parent) + '/' + self.name + '(delnode)'
         else:
             return '/' + self.name + '(delnode)'
 
     def isNewerThan(self, node):
+        # node + whiteout always returns a whiteout
         return True
 
     def __add__(self, node):
+        # whiteout + node always returns the node
         return copy(node)
 
     def toXML(self):
@@ -556,20 +638,22 @@ class WhiteoutNode(Node):
         return xml
     
     def export(self, datastore, exporter):
+        """creates a whiteout file of a type specified by the exporter object"""
         exporter.handleWhiteout(self) 
 
 class PatchNode(Node):
-    """PatchNode is a decorator with which the exported file content is changed
-    during export time"""
+    """PatchNode is a decorator which changes the exported file content"""
 
     __slots__ = Node.__slots__ + [ "node","content" ]
 
     def __init__(self, node, content):        
         Node.__init__(self, node.name)
         self.node = node
-        self.content = content
+        self.content = content # filled by Server
 
     def export(self, datastore, exporter):
+        """stores content provided by a script at the location generated
+        within the exporter opject"""
         with open(exporter.getPath(self.node),'wb') as fdst:
             fdst.write(self.content)
 
@@ -577,7 +661,7 @@ class PatchNode(Node):
         
 
 class RMNode(Node):
-    """RMNode: remove node is a ??? to handle the state of removed files in a manifest 
+    """RMNode: remove node is a decorator to handle the state of removed files in a manifest 
     generated by manifest_a - manifest_b"""
 
     __slots__ = Node.__slots__ + [ "node" ]
@@ -587,5 +671,6 @@ class RMNode(Node):
         self.node = node
 
     def export(self, datastore, exporter):
+        """deletes the file at the path storend in the exporter object"""
         if os.path.exists(exporter.getPath(self.node)):
             self.node.remove(exporter)

@@ -5,9 +5,18 @@ import ConfigParser
 from mis.datastore import Datastore
 
 class DatastoreConfig(object):
+    """Container class
+    
+    The DatastoreConfig class holds the path under which
+    the datastores files are stored and the type, 
+    (currently GZIP6, GZIP1 and SPARSE) which describes
+    how files should be read and written. 
+    
+    """
     pass
 
 class Config(object):
+    """Easy access to configuration parameters"""
     
     def __init__(self, fp):
         self.config = ConfigParser.SafeConfigParser()

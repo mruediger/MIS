@@ -2,7 +2,7 @@
 # See LICENSE for details.
 """manifest serializer
 
-methods to create or read the manifest XML files
+Contains methods to create manifest objects
 """
 
 __author__ = 'Mathias Ruediger <ruediger@blueboot.org>'
@@ -17,7 +17,7 @@ from mis.manifest.nodes import *
 class NullNode(object):
 
     def addTo(self, directory):
-	pass
+	    pass
 
 def fromXML(xml_file):
     """reads xml file and creates a manifest object"""
@@ -67,7 +67,6 @@ def fromXML(xml_file):
 def fromPath(path, datastore=None):
     """
     traverses through path and creates a manifest object
-    @
     """
 
     #check if directory contains unionfs
@@ -91,7 +90,8 @@ def _searchFiles(root, subpath, datastore, name, unionfspath):
         return node
 
     if stat.S_ISREG(stats.st_mode):
-        if name.startswith(".wh."):
+        if name.startswith(".wh."): 
+            # only aufs is currently supported
             return WhiteoutNode(name[4:], stats)
 
         node = File(name, stats)
