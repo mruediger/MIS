@@ -29,6 +29,6 @@ class Autopatcher(object):
             stderr=subprocess.PIPE)
 
         (stdoutdata, stderrdata) = process.communicate()
-        if (stderrdata) and (len(stderrdata) > 0):
+        if stderrdata:
             raise Exception(stderrdata)
         return stdoutdata
